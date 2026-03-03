@@ -122,3 +122,23 @@ function recordDraw(id1, id2) {
 
   updateStandings();
 }
+function updateStandings() {
+  const tbody = document.querySelector("#standingsTable tbody");
+  tbody.innerHTML = "";
+
+  const sorted = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
+
+  sorted.forEach(player => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${player.name}</td>
+      <td>${player.matchPoints}</td>
+      <td>0%</td>
+      <td>0%</td>
+      <td>0%</td>
+    `;
+
+    tbody.appendChild(row);
+  });
+}
