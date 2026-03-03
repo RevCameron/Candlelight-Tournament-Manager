@@ -1,127 +1,158 @@
 let tournament = {
-  gameMode: null,
+  gameMode: "",
   totalRounds: 0,
   currentRound: 0,
-  players: []
+  players: [],
+  pods: [],
+  roundComplete: false
 };
 
 function createTournament() {
-  const roundInput = document.getElementById("roundCount").value;
-
-  if (!roundInput || roundInput < 1) {
-    alert("Please enter a valid number of rounds.");
-    return;
-  }
-
   tournament.gameMode = document.getElementById("gameMode").value;
-  tournament.totalRounds = parseInt(roundInput);
+  tournament.totalRounds = parseInt(document.getElementById("roundCount").value);
+  tournament.currentRound = 0;
 
   document.getElementById("setup").style.display = "none";
-  document.getElementById("playerSection").style.display = "block";
+  document.getElementById("registration").style.display = "block";
 }
 
 function addPlayer() {
-  const nameInput = document.getElementById("playerName");
-  const name = nameInput.value.trim();
+  const input = document.getElementById("playerName");
+  const name = input.value.trim();
 
   if (!name) return;
 
-  const player = {
-    id: Date.now(),
+  tournament.players.push({
+    id: tournament.players.length,
     name: name,
     matchPoints: 0,
-    matchesPlayed: 0,
+    opponents: [],
     gameWins: 0,
-    gameLosses: 0,
-    gameTies: 0,
-    opponents: []
-  };
+    gameLosses: 0
+  });
 
-  tournament.players.push(player);
-
-  updatePlayerList();
-  nameInput.value = "";
+  input.value = "";
+  renderPlayerList();
 }
 
-function updatePlayerList() {
+function renderPlayerList() {
   const list = document.getElementById("playerList");
   list.innerHTML = "";
 
   tournament.players.forEach(player => {
-    const li = document.createElement("li");
-    li.textContent = player.name;
-    list.appendChild(li);
+    list.innerHTML += `<li>${player.name}</li>`;
   });
 }
 
-function beginTournament() {
-  if (tournament.players.length < 3) {
-    alert("At least 3 players are required.");
+function startRounds() {
+  document.getElementById("registration").style.display = "none";
+  document.getElementById("tournament").style.display = "block";
+  nextRound();
+}
+
+function nextRound() {
+  if (tournament.currentRound >= tournament.totalRounds) {
+    alert("Tournament complete.");
     return;
   }
 
-  document.getElementById("playerSection").style.display = "none";
-  document.getElementById("standingsSection").style.display = "block";
+  tournament.currentRound++;
+  tournament.roundComplete = false;
 
-  tournament.currentRound = 1;
-  generatePairings();
+  generatePods();
+  renderPods();
   updateStandings();
 }
-function generatePairings() {
-  const pairingSection = document.getElementById("pairings");
-  pairingSection.innerHTML = `<h2>Round ${tournament.currentRound} Pairings</h2>`;
 
-  // Sort by match points
+function generatePods() {
   const sorted = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
+  tournament.pods = [];
 
-  for (let i = 0; i < sorted.length; i += 2) {
-    if (!sorted[i + 1]) {
-      pairingSection.innerHTML += `<p>${sorted[i].name} receives a bye.</p>`;
-      sorted[i].matchPoints += 3;
-      sorted[i].matchesPlayed += 1;
-      continue;
+  let remaining = [...sorted];
+
+  while (remaining.length > 0) {
+    if (remaining.length === 3) {
+      tournament.pods.push(remaining.splice(0, 3));
+    } else if (remaining.length === 5) {
+      tournament.pods.push(remaining.splice(0, 4));
+    } else {
+      tournament.pods.push(remaining.splice(0, 4));
     }
-
-    pairingSection.innerHTML += `
-      <div>
-        ${sorted[i].name} vs ${sorted[i+1].name}
-        <button onclick="recordWin(${sorted[i].id}, ${sorted[i+1].id})">Win</button>
-        <button onclick="recordWin(${sorted[i+1].id}, ${sorted[i].id})">Win</button>
-        <button onclick="recordDraw(${sorted[i].id}, ${sorted[i+1].id})">Draw</button>
-      </div>
-    `;
   }
 }
 
-function recordWin(winnerId, loserId) {
-  const winner = tournament.players.find(p => p.id === winnerId);
-  const loser = tournament.players.find(p => p.id === loserId);
+function renderPods() {
+  const section = document.getElementById("pairings");
+  section.innerHTML = `<h2>Round ${tournament.currentRound}</h2>`;
 
-  winner.matchPoints += 3;
-  winner.matchesPlayed += 1;
-  loser.matchesPlayed += 1;
+  tournament.pods.forEach((pod, index) => {
+    section.innerHTML += `<h3>Pod ${index + 1}</h3>`;
 
-  winner.opponents.push(loserId);
-  loser.opponents.push(winnerId);
+    pod.forEach(player => {
+      section.innerHTML += `
+        <div>
+          ${player.name}
+          <button onclick="reportWin(${index}, ${player.id})">Win</button>
+        </div>
+      `;
+    });
 
+    section.innerHTML += `
+      <button onclick="reportDraw(${index})">All Draw</button>
+      <hr>
+    `;
+  });
+
+  section.innerHTML += `
+    <button onclick="nextRound()">Generate Next Round</button>
+  `;
+}
+
+function reportWin(podIndex, winnerId) {
+  if (tournament.roundComplete) return;
+
+  const pod = tournament.pods[podIndex];
+  const winner = pod.find(p => p.id === winnerId);
+
+  if (tournament.gameMode === "MTG Commander") {
+    pod.forEach(player => {
+      if (player.id === winnerId) {
+        player.matchPoints += 5;
+      } else {
+        player.matchPoints += 3;
+      }
+    });
+  } else {
+    pod.forEach(player => {
+      if (player.id === winnerId) {
+        player.matchPoints += 3;
+      }
+    });
+  }
+
+  lockPod(podIndex);
+}
+
+function reportDraw(podIndex) {
+  if (tournament.roundComplete) return;
+
+  const pod = tournament.pods[podIndex];
+
+  pod.forEach(player => {
+    player.matchPoints += 3;
+  });
+
+  lockPod(podIndex);
+}
+
+function lockPod(podIndex) {
+  const buttons = document.querySelectorAll(`button`);
+  buttons.forEach(btn => btn.disabled = true);
+
+  tournament.roundComplete = true;
   updateStandings();
 }
 
-function recordDraw(id1, id2) {
-  const p1 = tournament.players.find(p => p.id === id1);
-  const p2 = tournament.players.find(p => p.id === id2);
-
-  p1.matchPoints += 1;
-  p2.matchPoints += 1;
-
-  p1.matchesPlayed += 1;
-  p2.matchesPlayed += 1;
-
-  p1.opponents.push(id2);
-  p2.opponents.push(id1);
-
-  updateStandings();
-}
 function updateStandings() {
   const tbody = document.querySelector("#standingsTable tbody");
   tbody.innerHTML = "";
@@ -129,26 +160,14 @@ function updateStandings() {
   const sorted = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
 
   sorted.forEach(player => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${player.name}</td>
-      <td>${player.matchPoints}</td>
-      <td>0%</td>
-      <td>0%</td>
-      <td>0%</td>
+    tbody.innerHTML += `
+      <tr>
+        <td>${player.name}</td>
+        <td>${player.matchPoints}</td>
+        <td>0%</td>
+        <td>0%</td>
+        <td>0%</td>
+      </tr>
     `;
-
-    tbody.appendChild(row);
   });
 }
-document.addEventListener("DOMContentLoaded", function () {
-  const playerInput = document.getElementById("playerName");
-
-  playerInput.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-      event.preventDefault(); // prevents accidental form submission
-      addPlayer();
-    }
-  });
-});
