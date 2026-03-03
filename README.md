@@ -7,8 +7,13 @@ Multiplayer Swiss Tournament Engine for Commander and SWU Twin Suns.
 - Player registration with duplicate-name protection and Enter-to-add support.
 - 3/4-player pod generation (no 2-player pods when a valid 3/4 split exists).
 - Pod result entry with explicit Winner, Loser, and All Draw reporting.
-- Pod-level lock after result submission.
-- Manual next-round generation only after all pods are reported.
+- Pod-level lock after result submission, with **Edit Result** support on previous rounds.
+- Round tabs so previous rounds stay accessible and editable.
+- Round document generation:
+  - **Print Pairings (First Name A-Z)**
+  - **Print Match Slips**
+- Tournament-end document generation:
+  - **Print Final Standings**
 - Standings with Match Points, OMW%, GW/TGW%, and OGW%.
 
 ## Notes
