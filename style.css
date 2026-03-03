@@ -1,68 +1,68 @@
---- a/style.css
-+++ b/style.css
-@@ -1,39 +1,62 @@
- body {
-   font-family: Arial, sans-serif;
-   margin: 30px;
-   background-color: #f4f4f4;
- }
- 
- h1 {
-   margin-bottom: 30px;
- }
- 
- h2 {
-   margin-top: 30px;
- }
- 
- input, select, button {
-   margin: 8px 0;
-   padding: 6px;
- }
- 
- button {
-   cursor: pointer;
- }
- 
-+#pairings {
-+  margin-bottom: 16px;
-+}
-+
-+.pod-card {
-+  background: #fff;
-+  border: 1px solid #ddd;
-+  border-radius: 6px;
-+  margin-bottom: 12px;
-+  padding: 12px;
-+}
-+
-+.pod-actions {
-+  display: flex;
-+  gap: 8px;
-+}
-+
-+.pod-status {
-+  color: #2f6f2f;
-+  font-weight: bold;
-+  margin-top: 8px;
-+}
-+
- table {
-   border-collapse: collapse;
-   margin-top: 20px;
-   width: 100%;
-   background-color: white;
- }
- 
- th, td {
-   border: 1px solid #ccc;
-   padding: 8px;
-   text-align: center;
- }
- 
- th {
-   background-color: #eaeaea;
- }
- 
-EOF
-)
+body {
+  font-family: Arial, sans-serif;
+  margin: 30px;
+  background-color: #f4f4f4;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+h2 {
+  margin-top: 24px;
+}
+
+label {
+  display: block;
+  margin-top: 8px;
+}
+
+input, select, button {
+  margin: 8px 0;
+  padding: 6px;
+}
+
+button {
+  cursor: pointer;
+}
+
+#pairings {
+  margin-bottom: 16px;
+}
+
+.pod-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.pod-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pod-status {
+  color: #2f6f2f;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+table {
+  border-collapse: collapse;
+  margin-top: 20px;
+  width: 100%;
+  background-color: white;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #eaeaea;
+}
