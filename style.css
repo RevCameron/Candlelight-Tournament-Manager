@@ -26,6 +26,30 @@ button {
   cursor: pointer;
 }
 
+.round-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tab-button {
+  border: 1px solid #999;
+  background: #fff;
+}
+
+.active-tab {
+  background: #dde7ff;
+  border-color: #4b6cb7;
+}
+
+.round-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 #pairings {
   margin-bottom: 16px;
 }
