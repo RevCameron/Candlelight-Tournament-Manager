@@ -68,6 +68,15 @@ button {
   gap: 8px;
 }
 
+.pod-rank-table {
+  margin-top: 10px;
+}
+
+.pod-rank-table th,
+.pod-rank-table td {
+  text-align: left;
+}
+
 .pod-status {
   color: #2f6f2f;
   font-weight: bold;
