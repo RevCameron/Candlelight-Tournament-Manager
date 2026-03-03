@@ -14,10 +14,14 @@ Multiplayer Swiss Tournament Engine for Commander and SWU Twin Suns.
   - **Print Match Slips** with ranking circles, tie circle, and player signature lines
 - Tournament-end document generation:
   - **Print Final Standings**
+- Player management during the event:
+  - **Edit Name**
+  - **Drop Player**
+  - **Eliminate Player**
+  - **Re-activate Player**
 - Standings with Match Points, OMW%, GW/TGW%, and OGW%.
 
 ## Notes
 - Opponent-based percentages use a 33% minimum floor.
 - This is a front-end-only prototype currently using in-memory tournament state.
-
 - If print windows do not appear, allow browser popups for the site.
