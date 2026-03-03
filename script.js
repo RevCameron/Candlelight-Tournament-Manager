@@ -142,3 +142,13 @@ function updateStandings() {
     tbody.appendChild(row);
   });
 }
+document.addEventListener("DOMContentLoaded", function () {
+  const playerInput = document.getElementById("playerName");
+
+  playerInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault(); // prevents accidental form submission
+      addPlayer();
+    }
+  });
+});
