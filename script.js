@@ -5,7 +5,7 @@ let tournament = {
   players: []
 };
 
-function createEvent() {
+function createTournament() {
   const roundInput = document.getElementById("roundCount").value;
 
   if (!roundInput || roundInput < 1) {
