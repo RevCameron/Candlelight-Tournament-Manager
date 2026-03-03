@@ -42,9 +42,14 @@
 
     <div id="tournament" style="display:none;">
         <h2 id="roundHeader"></h2>
+
+        <div id="roundTabs" class="round-tabs"></div>
+        <div id="roundControls" class="round-controls"></div>
+
         <div id="pairings"></div>
 
         <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
+        <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
 
         <h2>Standings</h2>
         <table id="standingsTable" border="1">
