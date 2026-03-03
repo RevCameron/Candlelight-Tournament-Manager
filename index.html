@@ -31,7 +31,11 @@
   <div id="playerSection" style="display:none;">
     <h2>Register Players</h2>
 
-    <input type="text" id="playerName" placeholder="Player Name">
+ <input 
+  type="text" 
+  id="playerName" 
+  placeholder="Enter player name" 
+  onkeydown="if(event.key === 'Enter') addPlayer();">
     <button type="button" onclick="addPlayer()">Add Player</button>
 
     <ul id="playerList"></ul>
