@@ -47,6 +47,7 @@ function addPlayer() {
   tournament.players.push({
     id: tournament.players.length,
     name,
+    status: "active",
     matchPoints: 0,
     matchesPlayed: 0,
     gameWins: 0,
@@ -68,8 +69,9 @@ function renderPlayerList() {
 }
 
 function startRounds() {
-  if (tournament.players.length < 3) {
-    alert("At least 3 players are required.");
+  const activeCount = tournament.players.filter(player => player.status === "active").length;
+  if (activeCount < 3) {
+    alert("At least 3 active players are required.");
     return;
   }
 
@@ -90,30 +92,36 @@ function nextRound() {
   }
 
   recalculateStandings();
-  const pods = buildPods().map(podPlayers => ({
-    players: podPlayers,
-    locked: false,
-    result: null
-  }));
+  const podPlayerIds = buildPods();
+  if (podPlayerIds.length === 0) {
+    return;
+  }
 
   tournament.currentRound += 1;
   tournament.viewingRound = tournament.currentRound;
   tournament.rounds.push({
     number: tournament.currentRound,
-    pods
+    pods: podPlayerIds.map(players => ({
+      players,
+      locked: false,
+      result: null
+    }))
   });
 
   renderRoundTabs();
   renderRoundView(tournament.viewingRound);
   updateStandings();
+  renderPlayerManagement();
 }
 
 function buildPods() {
-  const sortedPlayers = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
-  const podSizes = getPodSizes(sortedPlayers.length);
+  const sortedPlayers = [...tournament.players]
+    .filter(player => player.status === "active")
+    .sort((a, b) => b.matchPoints - a.matchPoints);
 
+  const podSizes = getPodSizes(sortedPlayers.length);
   if (!podSizes) {
-    alert("Unable to make only 3-4 player pods with this player count.");
+    alert("Unable to make only 3-4 player pods with active player count.");
     return [];
   }
 
@@ -170,32 +178,48 @@ function renderRoundView(roundNumber) {
 
   round.pods.forEach((pod, podIndex) => {
     const playerObjects = pod.players.map(id => findPlayer(id));
-    const playerOptions = playerObjects
-      .map(player => `<option value="${player.id}">${player.name}</option>`)
-      .join("");
 
-    const winnerValue = pod.result?.winnerId ?? playerObjects[0].id;
-    const loserValue = pod.result?.loserId ?? playerObjects[playerObjects.length - 1].id;
+    const rankingRows = playerObjects.map((player, playerIndex) => {
+      const rankingOptions = playerObjects
+        .map((_, optionIndex) => {
+          const rankValue = optionIndex + 1;
+          return `<option value="${rankValue}">${rankValue}</option>`;
+        })
+        .join("");
+
+      const savedRank = pod.result?.type === "ranking"
+        ? pod.result.rankings[player.id]
+        : (playerIndex + 1);
+
+      return `
+        <tr>
+          <td>${player.name}</td>
+          <td>
+            <select id="rank-${round.number}-${podIndex}-${player.id}" ${pod.locked ? "disabled" : ""}>
+              ${rankingOptions}
+            </select>
+          </td>
+        </tr>
+      `;
+    }).join("");
 
     pairingsSection.innerHTML += `
       <div class="pod-card" id="pod-${round.number}-${podIndex}">
         <h3>Pod ${podIndex + 1} (${playerObjects.length} players)</h3>
-        <ul>
-          ${playerObjects.map(player => `<li>${player.name}</li>`).join("")}
-        </ul>
-
-        <label>Winner:</label>
-        <select id="winner-${round.number}-${podIndex}" ${pod.locked ? "disabled" : ""}>
-          ${playerOptions}
-        </select>
-
-        <label>Loser:</label>
-        <select id="loser-${round.number}-${podIndex}" ${pod.locked ? "disabled" : ""}>
-          ${playerOptions}
-        </select>
+        <table class="pod-rank-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Rank</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rankingRows}
+          </tbody>
+        </table>
 
         <div class="pod-actions">
-          <button onclick="reportPodResult(${round.number}, ${podIndex})" ${pod.locked ? "disabled" : ""}>Submit Result</button>
+          <button onclick="reportPodRanking(${round.number}, ${podIndex})" ${pod.locked ? "disabled" : ""}>Submit Ranking</button>
           <button onclick="reportPodDraw(${round.number}, ${podIndex})" ${pod.locked ? "disabled" : ""}>All Draw</button>
           <button onclick="editPodResult(${round.number}, ${podIndex})" ${pod.locked ? "" : "disabled"}>Edit Result</button>
         </div>
@@ -204,8 +228,12 @@ function renderRoundView(roundNumber) {
       </div>
     `;
 
-    document.getElementById(`winner-${round.number}-${podIndex}`).value = String(winnerValue);
-    document.getElementById(`loser-${round.number}-${podIndex}`).value = String(loserValue);
+    playerObjects.forEach((player, playerIndex) => {
+      const defaultRank = pod.result?.type === "ranking"
+        ? pod.result.rankings[player.id]
+        : (playerIndex + 1);
+      document.getElementById(`rank-${round.number}-${podIndex}-${player.id}`).value = String(defaultRank);
+    });
   });
 
   updateNextRoundButtonState();
@@ -219,22 +247,39 @@ function renderRoundControls(round) {
   `;
 }
 
-function reportPodResult(roundNumber, podIndex) {
+function reportPodRanking(roundNumber, podIndex) {
   const pod = getPod(roundNumber, podIndex);
   if (!pod || pod.locked) return;
 
-  const winnerId = parseInt(document.getElementById(`winner-${roundNumber}-${podIndex}`).value, 10);
-  const loserId = parseInt(document.getElementById(`loser-${roundNumber}-${podIndex}`).value, 10);
+  const rankings = {};
+  const usedRanks = new Set();
 
-  if (winnerId === loserId) {
-    alert("Winner and loser cannot be the same player.");
+  for (const playerId of pod.players) {
+    const selectedRank = parseInt(
+      document.getElementById(`rank-${roundNumber}-${podIndex}-${playerId}`).value,
+      10
+    );
+
+    if (usedRanks.has(selectedRank)) {
+      alert("Each player must have a unique rank. Use All Draw for tied games.");
+      return;
+    }
+
+    usedRanks.add(selectedRank);
+    rankings[playerId] = selectedRank;
+  }
+
+  const expectedRanks = Array.from({ length: pod.players.length }, (_, i) => i + 1);
+  const sortedChosenRanks = [...usedRanks].sort((a, b) => a - b);
+
+  if (expectedRanks.some((rank, i) => rank !== sortedChosenRanks[i])) {
+    alert("Ranks must be sequential starting at 1.");
     return;
   }
 
   pod.result = {
-    type: "win",
-    winnerId,
-    loserId
+    type: "ranking",
+    rankings
   };
   pod.locked = true;
 
@@ -278,15 +323,117 @@ function findPlayer(playerId) {
 function describePodResult(pod, playersInPod) {
   if (!pod.locked || !pod.result) return "Pending";
   if (pod.result.type === "draw") return "Draw recorded";
+  if (pod.result.type === "ranking") {
+    return playersInPod
+      .map(player => `${player.name}: ${pod.result.rankings[player.id]}`)
+      .join(" | ");
+  }
 
-  const winner = playersInPod.find(player => player.id === pod.result.winnerId)?.name || "Unknown";
-  const loser = playersInPod.find(player => player.id === pod.result.loserId)?.name || "Unknown";
-  return `Winner: ${winner} | Loser: ${loser}`;
+  return "Pending";
 }
 
 function isRoundComplete(roundNumber) {
   const round = tournament.rounds[roundNumber - 1];
   return !!round && round.pods.every(pod => pod.locked && pod.result);
+}
+
+function isSafeToModifyPlayers() {
+  if (tournament.currentRound === 0) return true;
+  return isRoundComplete(tournament.currentRound);
+}
+
+function renderPlayerManagement() {
+  const tbody = document.querySelector("#playerManagementTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  tournament.players
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(player => {
+      const statusLabel = getStatusLabel(player.status);
+      const statusActions = player.status === "active"
+        ? `
+          <button onclick="setPlayerStatus(${player.id}, 'dropped')">Drop</button>
+          <button onclick="setPlayerStatus(${player.id}, 'eliminated')">Eliminate</button>
+        `
+        : `<button onclick="setPlayerStatus(${player.id}, 'active')">Re-activate</button>`;
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${player.name}</td>
+          <td>${statusLabel}</td>
+          <td>
+            <div class="player-action-row">
+              <button onclick="editPlayerName(${player.id})">Edit Name</button>
+              ${statusActions}
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+}
+
+function setPlayerStatus(playerId, newStatus) {
+  if (!isSafeToModifyPlayers()) {
+    alert("Finish the current round before changing player status.");
+    return;
+  }
+
+  const player = findPlayer(playerId);
+  if (!player) return;
+
+  player.status = newStatus;
+
+  const activeCount = tournament.players.filter(p => p.status === "active").length;
+  if (activeCount < 3 && tournament.currentRound < tournament.totalRounds) {
+    player.status = "active";
+    alert("You need at least 3 active players to continue.");
+    return;
+  }
+
+  recalculateStandings();
+  updateStandings();
+  renderPlayerManagement();
+}
+
+function editPlayerName(playerId) {
+  if (!isSafeToModifyPlayers()) {
+    alert("Finish the current round before editing names.");
+    return;
+  }
+
+  const player = findPlayer(playerId);
+  if (!player) return;
+
+  const updatedName = prompt("Enter new player name:", player.name);
+  if (!updatedName) return;
+
+  const trimmedName = updatedName.trim();
+  if (!trimmedName) return;
+
+  const duplicate = tournament.players.some(
+    other => other.id !== player.id && other.name.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicate) {
+    alert("Another player already has that name.");
+    return;
+  }
+
+  player.name = trimmedName;
+  renderPlayerManagement();
+  renderRoundTabs();
+  if (tournament.viewingRound > 0) {
+    renderRoundView(tournament.viewingRound);
+  }
+  updateStandings();
+}
+
+function getStatusLabel(status) {
+  if (status === "dropped") return "Dropped";
+  if (status === "eliminated") return "Eliminated";
+  return "Active";
 }
 
 function updateNextRoundButtonState() {
@@ -328,19 +475,25 @@ function recalculateStandings() {
         return;
       }
 
-      podPlayers.forEach(player => {
-        player.matchesPlayed += 1;
-        if (player.id === pod.result.winnerId) {
-          player.matchPoints += 5;
-          player.gameWins += 1;
-        } else if (player.id === pod.result.loserId) {
-          player.matchPoints += 1;
-          player.gameLosses += 1;
-        } else {
-          player.matchPoints += 3;
-          player.gameDraws += 1;
-        }
-      });
+      if (pod.result.type === "ranking") {
+        const maxRank = podPlayers.length;
+
+        podPlayers.forEach(player => {
+          player.matchesPlayed += 1;
+          const playerRank = pod.result.rankings[player.id];
+
+          if (playerRank === 1) {
+            player.matchPoints += 5;
+            player.gameWins += 1;
+          } else if (playerRank === maxRank) {
+            player.matchPoints += 1;
+            player.gameLosses += 1;
+          } else {
+            player.matchPoints += 3;
+            player.gameDraws += 1;
+          }
+        });
+      }
     });
   });
 }
@@ -363,6 +516,7 @@ function updateStandings() {
     tbody.innerHTML += `
       <tr>
         <td>${player.name}</td>
+        <td>${getStatusLabel(player.status)}</td>
         <td>${player.matchPoints}</td>
         <td>${formatPercent(calculateOmw(player))}</td>
         <td>${formatPercent(calculateGwp(player))}</td>
@@ -410,6 +564,20 @@ function formatPercent(decimalValue) {
   return `${(decimalValue * 100).toFixed(1)}%`;
 }
 
+function openPrintWindow(documentTitle, html) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Popup blocked. Please allow popups for this site to print documents.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function printRoundPairings(roundNumber) {
   const round = tournament.rounds[roundNumber - 1];
   if (!round) return;
@@ -445,11 +613,7 @@ function printRoundPairings(roundNumber) {
     </body></html>
   `;
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  openPrintWindow(`Round ${round.number} Pairings`, html);
 }
 
 function printRoundMatchSlips(roundNumber) {
@@ -458,32 +622,69 @@ function printRoundMatchSlips(roundNumber) {
 
   const slips = round.pods.map((pod, index) => {
     const players = pod.players.map(id => findPlayer(id).name);
+    const rankingHeader = Array.from({ length: pod.players.length }, (_, i) => `<th>${i + 1}</th>`).join("");
+    const rankingRows = players.map(playerName => `
+      <tr>
+        <td>${playerName}</td>
+        ${Array.from({ length: pod.players.length }, () => "<td>○</td>").join("")}
+      </tr>
+    `).join("");
+
+    const signatureRows = players.map(playerName => `
+      <tr>
+        <td>${playerName}</td>
+        <td>____________________________</td>
+      </tr>
+    `).join("");
+
     return `
       <div class="slip">
         <h3>Round ${round.number} - Pod ${index + 1}</h3>
-        <p><strong>Players:</strong> ${players.join(" | ")}</p>
-        <p>Winner: ___________________________</p>
-        <p>Loser: ____________________________</p>
-        <p>All Draw (circle): Yes / No</p>
-        <p>Judge/TO Signature: ___________________________</p>
+        <table class="slip-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              ${rankingHeader}
+            </tr>
+          </thead>
+          <tbody>
+            ${rankingRows}
+          </tbody>
+        </table>
+        <p><strong>Tie:</strong> ○</p>
+
+        <h4>Player Signatures</h4>
+        <table class="sig-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Signature</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${signatureRows}
+          </tbody>
+        </table>
       </div>
     `;
   }).join("");
 
   const html = `
     <html><head><title>Round ${round.number} Match Slips</title>
-    <style>body{font-family:Arial;padding:20px}.slip{border:1px solid #333;padding:12px;margin-bottom:14px;page-break-inside:avoid}</style>
+    <style>
+      body{font-family:Arial;padding:20px}
+      .slip{border:1px solid #333;padding:12px;margin-bottom:14px;page-break-inside:avoid}
+      table{width:100%;border-collapse:collapse;margin-top:8px}
+      th,td{border:1px solid #aaa;padding:6px;text-align:center}
+      h4{margin-bottom:4px}
+    </style>
     </head><body>
     <h2>Round ${round.number} Match Slips</h2>
     ${slips}
     </body></html>
   `;
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  openPrintWindow(`Round ${round.number} Match Slips`, html);
 }
 
 function printFinalStandings() {
@@ -496,12 +697,13 @@ function printFinalStandings() {
     </head><body>
     <h2>Final Standings</h2>
     <table>
-      <thead><tr><th>Rank</th><th>Name</th><th>Match Points</th><th>OMW%</th><th>${tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%"}</th><th>OGW%</th></tr></thead>
+      <thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Match Points</th><th>OMW%</th><th>${tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%"}</th><th>OGW%</th></tr></thead>
       <tbody>
         ${sorted.map((player, index) => `
           <tr>
             <td>${index + 1}</td>
             <td>${player.name}</td>
+            <td>${getStatusLabel(player.status)}</td>
             <td>${player.matchPoints}</td>
             <td>${formatPercent(calculateOmw(player))}</td>
             <td>${formatPercent(calculateGwp(player))}</td>
@@ -513,11 +715,7 @@ function printFinalStandings() {
     </body></html>
   `;
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  openPrintWindow("Final Standings", html);
 }
 
 window.createTournament = createTournament;
@@ -525,9 +723,11 @@ window.addPlayer = addPlayer;
 window.startRounds = startRounds;
 window.nextRound = nextRound;
 window.openRound = openRound;
-window.reportPodResult = reportPodResult;
+window.reportPodRanking = reportPodRanking;
 window.reportPodDraw = reportPodDraw;
 window.editPodResult = editPodResult;
+window.editPlayerName = editPlayerName;
+window.setPlayerStatus = setPlayerStatus;
 window.printRoundPairings = printRoundPairings;
 window.printRoundMatchSlips = printRoundMatchSlips;
 window.printFinalStandings = printFinalStandings;
