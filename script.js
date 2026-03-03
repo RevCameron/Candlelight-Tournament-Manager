@@ -1,9 +1,3 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/script.js b/script.js
-index 0e2ea0cf179dd6c2724e93c845c189cdd9387945..8b398a49b0ad8aed56f8e168b2c855a0902d8d4f 100644
---- a/script.js
-+++ b/script.js
-@@ -1,173 +1,308 @@
  let tournament = {
    gameMode: "",
    totalRounds: 0,
@@ -387,6 +381,3 @@ index 0e2ea0cf179dd6c2724e93c845c189cdd9387945..8b398a49b0ad8aed56f8e168b2c855a0
 +function formatPercent(decimalValue) {
 +  return `${(decimalValue * 100).toFixed(1)}%`;
 +}
- 
-EOF
-)
