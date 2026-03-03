@@ -9,7 +9,12 @@ h1 {
 }
 
 h2 {
-  margin-top: 30px;
+  margin-top: 24px;
+}
+
+label {
+  display: block;
+  margin-top: 8px;
 }
 
 input, select, button {
@@ -19,6 +24,30 @@ input, select, button {
 
 button {
   cursor: pointer;
+}
+
+#pairings {
+  margin-bottom: 16px;
+}
+
+.pod-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.pod-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pod-status {
+  color: #2f6f2f;
+  font-weight: bold;
+  margin-top: 8px;
 }
 
 table {
