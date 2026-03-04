@@ -927,6 +927,26 @@ function printRoundMatchSlips(roundNumber) {
           text-align: center;
           font-weight: bold;
         }
+        .signature-line {
+  margin-top: auto;
+}
+
+/* ADD BELOW HERE */
+
+.slip-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.tournament-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.round-info {
+  font-size: 14px;
+  margin-top: 4px;
+}
 
       </style>
     </head>
