@@ -4,7 +4,8 @@ let tournament = {
   currentRound: 0,
   viewingRound: 0,
   players: [],
-  rounds: []
+  rounds: [],
+  nextPlayerId: 1
 };
 
 const MIN_OPPONENT_PERCENT = 0.33;
@@ -22,7 +23,8 @@ function createTournament() {
     currentRound: 0,
     viewingRound: 0,
     players: [],
-    rounds: []
+    rounds: [],
+    nextPlayerId: 1
   };
 
   document.getElementById("setup").style.display = "none";
@@ -45,7 +47,7 @@ function addPlayer() {
   }
 
   tournament.players.push({
-    id: tournament.players.length,
+    id: tournament.nextPlayerId,
     name,
     status: "active",
     matchPoints: 0,
@@ -56,6 +58,8 @@ function addPlayer() {
     opponents: []
   });
 
+  tournament.nextPlayerId += 1;
+
   input.value = "";
   renderPlayerList();
 }
@@ -63,9 +67,49 @@ function addPlayer() {
 function renderPlayerList() {
   const list = document.getElementById("playerList");
   list.innerHTML = "";
-  tournament.players.forEach(player => {
-    list.innerHTML += `<li>${player.name}</li>`;
-  });
+
+  tournament.players
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(player => {
+      const li = document.createElement("li");
+      li.className = "registration-player-item";
+      li.innerHTML = `
+        <span>${player.name}</span>
+        <div class="registration-player-actions">
+          <button title="Edit player" class="icon-button" onclick="editRegisteredPlayer(${player.id})">✏️</button>
+          <button title="Remove player" class="icon-button danger" onclick="deleteRegisteredPlayer(${player.id})">✕</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+}
+
+function editRegisteredPlayer(playerId) {
+  const player = findPlayer(playerId);
+  if (!player) return;
+
+  const updatedName = prompt("Edit player name:", player.name);
+  if (!updatedName) return;
+
+  const trimmedName = updatedName.trim();
+  if (!trimmedName) return;
+
+  const duplicate = tournament.players.some(
+    other => other.id !== player.id && other.name.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicate) {
+    alert("Another player already has that name.");
+    return;
+  }
+
+  player.name = trimmedName;
+  renderPlayerList();
+}
+
+function deleteRegisteredPlayer(playerId) {
+  tournament.players = tournament.players.filter(player => player.id !== playerId);
+  renderPlayerList();
 }
 
 function startRounds() {
@@ -114,10 +158,24 @@ function nextRound() {
   renderPlayerManagement();
 }
 
+function shuffleArray(items) {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 function buildPods() {
-  const sortedPlayers = [...tournament.players]
-    .filter(player => player.status === "active")
-    .sort((a, b) => b.matchPoints - a.matchPoints);
+  let sortedPlayers = [...tournament.players]
+    .filter(player => player.status === "active");
+
+  if (tournament.currentRound === 0) {
+    sortedPlayers = shuffleArray(sortedPlayers);
+  } else {
+    sortedPlayers = sortedPlayers.sort((a, b) => b.matchPoints - a.matchPoints);
+  }
 
   const podSizes = getPodSizes(sortedPlayers.length);
   if (!podSizes) {
@@ -290,29 +348,29 @@ function parseFastCodeForPod(pod, rawCode) {
     return { draw: true };
   }
 
-  const normalized = normalizedCode.replace(/[^0-9]/g, "");
+  const digits = normalizedCode.replace(/[^0-9]/g, "");
   const playerCount = pod.players.length;
 
-  if (normalized.length !== playerCount) {
-    return { error: `Code must include exactly ${playerCount} seat numbers.` };
+  if (digits.length !== playerCount) {
+    return { error: `Code must include exactly ${playerCount} digits.` };
   }
 
-  const usedSeats = new Set();
+  const usedRanks = new Set();
   const rankings = {};
 
-  for (let rankIndex = 0; rankIndex < normalized.length; rankIndex += 1) {
-    const seatNumber = parseInt(normalized[rankIndex], 10);
-    if (!seatNumber || seatNumber < 1 || seatNumber > playerCount) {
-      return { error: `Seat numbers must be between 1 and ${playerCount}.` };
+  for (let seatIndex = 0; seatIndex < digits.length; seatIndex += 1) {
+    const rankValue = parseInt(digits[seatIndex], 10);
+    if (!rankValue || rankValue < 1 || rankValue > playerCount) {
+      return { error: `Each digit must be a rank between 1 and ${playerCount}.` };
     }
 
-    if (usedSeats.has(seatNumber)) {
-      return { error: "Each seat number can only be used once in a code." };
+    if (usedRanks.has(rankValue)) {
+      return { error: "Each rank can only be used once in a code." };
     }
 
-    usedSeats.add(seatNumber);
-    const playerId = pod.players[seatNumber - 1];
-    rankings[playerId] = rankIndex + 1;
+    usedRanks.add(rankValue);
+    const playerId = pod.players[seatIndex];
+    rankings[playerId] = rankValue;
   }
 
   return { rankings };
@@ -331,7 +389,7 @@ function applyTournamentFastCodes() {
 
   const raw = input.value.trim();
   if (!raw) {
-    alert("Enter fast codes first. Example: 1:1324, 2:D");
+    alert("Enter fast codes first. Example: 1:1324, 2:D (code is ranks by seat order)");
     return;
   }
 
@@ -727,27 +785,16 @@ function printRoundPairings(roundNumber) {
   openPrintWindow(`Round ${round.number} Pairings`, html);
 }
 
-function getPermutationCodes(playerNames) {
-  const seatNumbers = playerNames.map((_, i) => String(i + 1));
-  const results = [];
+function buildCodeInstruction(players) {
+  const seatHints = players
+    .map((name, index) => `<li>Digit ${index + 1} (Seat ${index + 1}: ${name}) = final rank for that seat</li>`)
+    .join("");
 
-  function permute(remaining, built) {
-    if (remaining.length === 0) {
-      const orderedNames = built.map(seat => playerNames[parseInt(seat, 10) - 1]).join(" > ");
-      results.push({ code: built.join(""), orderedNames });
-      return;
-    }
-
-    for (let i = 0; i < remaining.length; i += 1) {
-      const next = remaining[i];
-      const rest = [...remaining.slice(0, i), ...remaining.slice(i + 1)];
-      permute(rest, [...built, next]);
-    }
-  }
-
-  permute(seatNumbers, []);
-
-  return results.map(entry => `<li><code>${entry.code}</code> = ${entry.orderedNames}</li>`).join("");
+  return `
+    <p><strong>Fast Code Rule:</strong> write ranks in <em>seat order</em>.</p>
+    <ul>${seatHints}</ul>
+    <p><strong>Example:</strong> code <code>1324</code> means Seat 1 = 1st, Seat 2 = 3rd, Seat 3 = 2nd, Seat 4 = 4th.</p>
+  `;
 }
 
 function printRoundMatchSlips(roundNumber) {
@@ -768,6 +815,7 @@ function printRoundMatchSlips(roundNumber) {
       <tr>
         <td>${seatIndex + 1}</td>
         <td>${playerName}</td>
+        <td>__</td>
       </tr>
     `).join("");
 
@@ -778,7 +826,7 @@ function printRoundMatchSlips(roundNumber) {
       </tr>
     `).join("");
 
-    const permutationCodes = getPermutationCodes(players);
+    const codeInstruction = buildCodeInstruction(players);
 
     return `
       <div class="slip">
@@ -790,6 +838,7 @@ function printRoundMatchSlips(roundNumber) {
             <tr>
               <th>Seat</th>
               <th>Player</th>
+              <th>Code Digit (Rank)</th>
             </tr>
           </thead>
           <tbody>
@@ -811,9 +860,9 @@ function printRoundMatchSlips(roundNumber) {
         </table>
         <p><strong>Tie Code:</strong> <code>D</code> ○</p>
 
-        <h4>Fast Result Codes</h4>
-        <p>Write one code in this box: __________</p>
-        <ul>${permutationCodes}</ul>
+        <h4>Fast Result Code</h4>
+        ${codeInstruction}
+        <p><strong>Code box:</strong> __________</p>
 
         <h4>Player Signatures</h4>
         <table class="sig-table">
@@ -885,6 +934,8 @@ function printFinalStandings() {
 
 window.createTournament = createTournament;
 window.addPlayer = addPlayer;
+window.editRegisteredPlayer = editRegisteredPlayer;
+window.deleteRegisteredPlayer = deleteRegisteredPlayer;
 window.startRounds = startRounds;
 window.nextRound = nextRound;
 window.openRound = openRound;
