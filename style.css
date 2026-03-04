@@ -159,3 +159,18 @@ th, td {
 th {
   background-color: #eaeaea;
 }
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.player-box {
+  border: 2px solid #333;
+  padding: 12px;
+  text-align: center;
+  font-weight: bold;
+  background-color: #f4f4f4;
+  border-radius: 6px;
+}
