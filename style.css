@@ -26,6 +26,37 @@ button {
   cursor: pointer;
 }
 
+
+#playerList {
+  list-style: none;
+  padding-left: 0;
+}
+
+.registration-player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.registration-player-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.icon-button {
+  min-width: 28px;
+  padding: 4px 6px;
+}
+
+.icon-button.danger {
+  color: #a30000;
+}
+
 .muted-text {
   color: #666;
   margin-top: -6px;
