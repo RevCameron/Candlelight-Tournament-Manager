@@ -338,63 +338,64 @@ function reportPodRanking(roundNumber, podIndex) {
   applyPodRankingResult(roundNumber, podIndex, rankings);
 }
 
-function parseFastCodeForPod(pod, rawCode) {
-  const normalizedCode = rawCode.trim().toUpperCase();
-  if (!normalizedCode) {
-    return { error: "Result code cannot be empty." };
-  }
+function parseFastCodeForPod(pod, codeDigits) {
+  const playerCount = pod.players.length;
 
-  if (normalizedCode === "D" || normalizedCode === "DRAW") {
+  if (codeDigits === "0000") {
     return { draw: true };
   }
 
-  const digits = normalizedCode.replace(/[^0-9]/g, "");
-  const playerCount = pod.players.length;
-
-  if (digits.length !== playerCount) {
-    return { error: `Code must include exactly ${playerCount} digits.` };
-  }
-
-  const usedRanks = new Set();
-  const rankings = {};
-
-  for (let seatIndex = 0; seatIndex < digits.length; seatIndex += 1) {
-    const rankValue = parseInt(digits[seatIndex], 10);
-    if (!rankValue || rankValue < 1 || rankValue > playerCount) {
-      return { error: `Each digit must be a rank between 1 and ${playerCount}.` };
+  if (playerCount === 3) {
+    if (!/^([1-3])([1-3])([1-3])0$/.test(codeDigits)) {
+      return { error: "For 3-player pods, use three ranks plus a trailing 0 (example: 1320)." };
     }
 
-    if (usedRanks.has(rankValue)) {
-      return { error: "Each rank can only be used once in a code." };
+    const firstThree = codeDigits.slice(0, 3).split("").map(value => parseInt(value, 10));
+    const uniqueRanks = new Set(firstThree);
+    if (uniqueRanks.size !== 3 || ![1, 2, 3].every(rank => uniqueRanks.has(rank))) {
+      return { error: "For 3-player pods, ranks must be 1, 2, and 3 exactly once." };
     }
 
-    usedRanks.add(rankValue);
-    const playerId = pod.players[seatIndex];
-    rankings[playerId] = rankValue;
+    const rankings = {};
+    for (let i = 0; i < 3; i += 1) {
+      rankings[pod.players[i]] = firstThree[i];
+    }
+    return { rankings };
   }
 
-  return { rankings };
+  if (playerCount === 4) {
+    if (!/^[1-4]{4}$/.test(codeDigits)) {
+      return { error: "For 4-player pods, code must use four digits between 1 and 4." };
+    }
+
+    const ranks = codeDigits.split("").map(value => parseInt(value, 10));
+    const uniqueRanks = new Set(ranks);
+    if (uniqueRanks.size !== 4 || ![1, 2, 3, 4].every(rank => uniqueRanks.has(rank))) {
+      return { error: "For 4-player pods, ranks must be 1, 2, 3, and 4 exactly once." };
+    }
+
+    const rankings = {};
+    for (let i = 0; i < 4; i += 1) {
+      rankings[pod.players[i]] = ranks[i];
+    }
+    return { rankings };
+  }
+
+  return { error: "Unsupported pod size for fast code." };
 }
 
 function applyTournamentFastCodes() {
-  const roundNumber = tournament.viewingRound;
-  const round = tournament.rounds[roundNumber - 1];
-  if (!round) {
-    alert("Open a round tab first.");
-    return;
-  }
-
   const input = document.getElementById("tournamentFastCode");
   if (!input) return;
 
   const raw = input.value.trim();
   if (!raw) {
-    alert("Enter fast codes first. Example: 1:1324, 2:D (code is ranks by seat order)");
+    alert("Enter fast codes first. Example: 231324 or tie code 230000.");
     return;
   }
 
   const entries = raw
-    .split(/[,;\n]+/)
+    .split(/[\s,;]+/)
     .map(part => part.trim())
     .filter(Boolean);
 
@@ -404,14 +405,21 @@ function applyTournamentFastCodes() {
   }
 
   for (const entry of entries) {
-    const match = entry.match(/^P?(\d+)\s*[:=]\s*(.+)$/i);
-    if (!match) {
-      alert(`Invalid entry format: ${entry}. Use Pod:Code, e.g. 1:1324`);
+    const digits = entry.replace(/\D/g, "");
+    if (!/^\d{6}$/.test(digits)) {
+      alert(`Invalid code: ${entry}. Use exactly 6 digits (Round, Pod, P1, P2, P3, P4).`);
       return;
     }
 
-    const podNumber = parseInt(match[1], 10);
-    const code = match[2].trim();
+    const roundNumber = parseInt(digits[0], 10);
+    const podNumber = parseInt(digits[1], 10);
+    const placements = digits.slice(2);
+
+    const round = tournament.rounds[roundNumber - 1];
+    if (!round) {
+      alert(`Round ${roundNumber} does not exist.`);
+      return;
+    }
 
     if (!podNumber || podNumber < 1 || podNumber > round.pods.length) {
       alert(`Pod ${podNumber} does not exist in Round ${roundNumber}.`);
@@ -422,13 +430,13 @@ function applyTournamentFastCodes() {
     const pod = round.pods[podIndex];
 
     if (pod.locked) {
-      alert(`Pod ${podNumber} is already locked. Click Edit Result first if needed.`);
+      alert(`Round ${roundNumber}, Pod ${podNumber} is already locked. Click Edit Result first if needed.`);
       return;
     }
 
-    const parsed = parseFastCodeForPod(pod, code);
+    const parsed = parseFastCodeForPod(pod, placements);
     if (parsed.error) {
-      alert(`Pod ${podNumber}: ${parsed.error}`);
+      alert(`Round ${roundNumber}, Pod ${podNumber}: ${parsed.error}`);
       return;
     }
 
@@ -785,15 +793,20 @@ function printRoundPairings(roundNumber) {
   openPrintWindow(`Round ${round.number} Pairings`, html);
 }
 
-function buildCodeInstruction(players) {
-  const seatHints = players
-    .map((name, index) => `<li>Digit ${index + 1} (Seat ${index + 1}: ${name}) = final rank for that seat</li>`)
+function buildCodeInstruction(roundNumber, podNumber, players) {
+  const playerLines = players
+    .map((name, index) => `<li>Player ${index + 1}: ${name}</li>`)
     .join("");
 
+  const codePattern = players.length === 3
+    ? `${roundNumber}${podNumber}P1P2P30`
+    : `${roundNumber}${podNumber}P1P2P3P4`;
+
   return `
-    <p><strong>Fast Code Rule:</strong> write ranks in <em>seat order</em>.</p>
-    <ul>${seatHints}</ul>
-    <p><strong>Example:</strong> code <code>1324</code> means Seat 1 = 1st, Seat 2 = 3rd, Seat 3 = 2nd, Seat 4 = 4th.</p>
+    <p><strong>Fast Code Format:</strong> Round, Pod, Player 1 place, Player 2 place, Player 3 place, Player 4 place.</p>
+    <p><strong>Pattern:</strong> <code>${codePattern}</code></p>
+    <ul>${playerLines}</ul>
+    <p><strong>Tie code:</strong> <code>${roundNumber}${podNumber}0000</code></p>
   `;
 }
 
@@ -811,40 +824,30 @@ function printRoundMatchSlips(roundNumber) {
       </tr>
     `).join("");
 
-    const seatMapRows = players.map((playerName, seatIndex) => `
-      <tr>
-        <td>${seatIndex + 1}</td>
-        <td>${playerName}</td>
-        <td>__</td>
-      </tr>
-    `).join("");
-
-    const signatureRows = players.map(playerName => `
+        const signatureRows = players.map(playerName => `
       <tr>
         <td>${playerName}</td>
         <td>____________________________</td>
       </tr>
     `).join("");
 
-    const codeInstruction = buildCodeInstruction(players);
+    const codeInstruction = buildCodeInstruction(round.number, index + 1, players);
 
     return `
       <div class="slip">
         <h3>Round ${round.number} - Pod ${index + 1}</h3>
 
-        <h4>Seat Map</h4>
-        <table class="sig-table">
-          <thead>
-            <tr>
-              <th>Seat</th>
-              <th>Player</th>
-              <th>Code Digit (Rank)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${seatMapRows}
-          </tbody>
-        </table>
+        <h4>Player Place Blocks</h4>
+        <div class="place-blocks">
+          ${players.map((playerName, playerIndex) => `
+            <div class="place-block">
+              <strong>Player ${playerIndex + 1}</strong><br>
+              ${playerName}<br>
+              Place: ${playerIndex === 3 && players.length === 3 ? "0" : "____"}
+            </div>
+          `).join("")}
+          ${players.length === 3 ? `<div class="place-block"><strong>Player 4</strong><br>Not used in 3-player pod<br>Place: 0</div>` : ""}
+        </div>
 
         <h4>Ranking Grid</h4>
         <table class="slip-table">
@@ -858,7 +861,7 @@ function printRoundMatchSlips(roundNumber) {
             ${rankingRows}
           </tbody>
         </table>
-        <p><strong>Tie Code:</strong> <code>D</code> ○</p>
+        <p><strong>Tie Code:</strong> <code>${round.number}${index + 1}0000</code> ○</p>
 
         <h4>Fast Result Code</h4>
         ${codeInstruction}
@@ -891,6 +894,8 @@ function printRoundMatchSlips(roundNumber) {
       li{margin:2px 0}
       h4{margin-bottom:4px}
       code{font-family:monospace}
+      .place-blocks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+      .place-block{border:1px solid #aaa;padding:8px;min-width:180px;text-align:left}
     </style>
     </head><body>
     <h2>Round ${round.number} Match Slips</h2>
