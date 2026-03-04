@@ -284,7 +284,21 @@ function renderRoundTabs() {
     `;
   });
 }
+const urlParams = new URLSearchParams(window.location.search);
 
+if (urlParams.has("pairings")) {
+
+  const data = JSON.parse(decodeURIComponent(urlParams.get("pairings")));
+
+  document.body.innerHTML = `
+    <h1>${data.tournament}</h1>
+    <h2>Round ${data.round} Pairings</h2>
+    ${data.pods.map((pod, i) => `
+      <p><strong>Pod ${i + 1}</strong>: ${pod.join(", ")}</p>
+    `).join("")}
+  `;
+
+}
 function openRound(roundNumber) {
   tournament.viewingRound = roundNumber;
   renderRoundTabs();
@@ -931,12 +945,14 @@ function printRoundMatchSlips(roundNumber) {
           page-break-after: always;
         }
 
-        .match-slip {
-          padding: 20px;
-          box-sizing: border-box;
-          height: 48%;
-          border-bottom: 2px dashed #999;
-        }
+.match-slip {
+  padding: 20px;
+  box-sizing: border-box;
+  height: 48%;
+  border-bottom: 2px dashed #999;
+  display: flex;
+  flex-direction: column;
+}
 
         .player-grid {
           display: grid;
@@ -996,6 +1012,9 @@ function printRoundMatchSlips(roundNumber) {
   font-size: 14px;
   margin-top: 4px;
 }
+.player-grid {
+  margin-top: 10px;
+}
 
       </style>
     </head>
@@ -1051,6 +1070,10 @@ function buildSlipHTML(pod, podIndex, round) {
         }).join("")}
 
       </div>
+
+    </div>
+  `;
+}
 
     </div>
   `;
@@ -1138,11 +1161,19 @@ function generatePlayerPortal() {
     <div id="qr"></div>
 
     <script>
-      new QRCode(document.getElementById("qr"), {
-        text: window.location.href,
-        width: 220,
-        height: 220
-      });
+const portalData = encodeURIComponent(JSON.stringify({
+  tournament: tournament.name,
+  round: round.number,
+  pods: round.pods.map(p => p.players.map(id => findPlayer(id).name))
+}));
+
+const portalURL = window.location.origin + window.location.pathname + "?pairings=" + portalData;
+
+new QRCode(document.getElementById("qr"), {
+  text: portalURL,
+  width: 220,
+  height: 220
+});
     </script>
 
   </body>
@@ -1262,20 +1293,7 @@ function importRoster() {
 
     reader.readAsText(file);
 }
-function saveTournament() {
 
-  const data = JSON.stringify(tournament);
-  const blob = new Blob([data], { type: "application/json" });
-
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "tournament-save.json";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
 function saveTournament() {
 
   const data = JSON.stringify(tournament);
