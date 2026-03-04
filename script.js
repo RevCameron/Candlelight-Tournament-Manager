@@ -825,123 +825,131 @@ function buildCodeInstruction(roundNumber, podNumber, players) {
     <p><strong>Tie code:</strong> <code>${roundNumber}${podNumber}0000</code></p>
   `;
 }
-
 function printRoundMatchSlips(roundNumber) {
-  const round = tournament.rounds[roundNumber - 1];
-  if (!round) return;
 
-  const slips = round.pods.map((pod, index) => {
-    const players = pod.players.map(id => findPlayer(id).name);
-    const rankingHeader = Array.from({ length: pod.players.length }, (_, i) => `<th>${i + 1}</th>`).join("");
-    const rankingRows = players.map(playerName => `
-      <tr>
-        <td>${playerName}</td>
-        ${Array.from({ length: pod.players.length }, () => "<td>○</td>").join("")}
-      </tr>
-    `).join("");
+  const round = tournament.rounds.find(r => r.number === roundNumber);
+  if (!round) {
+    alert("Round not found.");
+    return;
+  }
 
-        const signatureRows = players.map(playerName => `
-      <tr>
-        <td>${playerName}</td>
-        <td>____________________________</td>
-      </tr>
-    `).join("");
+  let slipsHTML = "";
 
-    const codeInstruction = buildCodeInstruction(round.number, index + 1, players);
+  round.pods.forEach((pod, podIndex) => {
 
-    return `
-      <div class="slip">
-        <h3>Round ${round.number} - Pod ${index + 1}</h3>
+    const players = pod;
 
-<h4>Player Place Blocks</h4>
-<div class="place-blocks">
-  ${[0,1,2,3].map(i => {
-    const playerName = players[i];
-    if (!playerName) {
-      return `
-        <div class="place-block">
-          <strong>Player ${i + 1}</strong>
+    slipsHTML += `
+      <div class="match-slip">
+        <div class="player-grid">
+
+          ${[0,1,2,3].map(i => {
+            const player = tournament.players.find(p => p.id === players[i]);
+            const name = player ? player.name : "";
+            const points = player ? player.matchPoints : "";
+
+            return `
+              <div class="player-box">
+                <div class="player-header">
+                  <strong>Player ${i + 1}:</strong> ${name} ${name ? `(${points})` : ""}
+                </div>
+
+                <div class="ranking-line">
+                  Ranking:
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3</span>
+                  <span>4</span>
+                  <span>TIE</span>
+                </div>
+
+                <div class="signature-line">
+                  Signature: ___________________________
+                </div>
+              </div>
+            `;
+          }).join("")}
+
         </div>
-      `;
-    }
-    return `
-      <div class="place-block">
-        <strong>Player ${i + 1}</strong>
-        <div>${playerName}</div>
-        <div>Place: ______</div>
+
+        <div class="slip-footer">
+          ${tournament.name} – Round ${round.number} – Pod ${podIndex + 1}
+        </div>
       </div>
     `;
-  }).join("")}
-</div>
-
-        <h4>Ranking Grid</h4>
-        <table class="slip-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              ${rankingHeader}
-            </tr>
-          </thead>
-          <tbody>
-            ${rankingRows}
-          </tbody>
-        </table>
-        <p><strong>Tie Code:</strong> <code>${round.number}${index + 1}0000</code> ○</p>
-
-        <h4>Fast Result Code</h4>
-        ${codeInstruction}
-        <p><strong>Code box:</strong> __________</p>
-
-        <h4>Player Signatures</h4>
-        <table class="sig-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Signature</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${signatureRows}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }).join("");
+  });
 
   const html = `
-    <html><head><title>Round ${round.number} Match Slips</title>
-    <style>
-      body{font-family:Arial;padding:20px}
-      .slip{border:1px solid #333;padding:12px;margin-bottom:14px;page-break-inside:avoid}
-      table{width:100%;border-collapse:collapse;margin-top:8px}
-      th,td{border:1px solid #aaa;padding:6px;text-align:center}
-      ul{margin:6px 0 0 16px;padding:0}
-      li{margin:2px 0}
-      h4{margin-bottom:4px}
-      code{font-family:monospace}
-.place-blocks{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:12px;
-  margin-bottom:12px;
-}
+    <html>
+    <head>
+      <title>Round ${round.number} Match Slips</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+        }
 
-.place-block{
-  border:1px solid #444;
-  padding:12px;
-  min-height:90px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-    </style>
-    </head><body>
-<h2>${tournament.name} – Round ${round.number} Match Slips</h2>
-    ${slips}
-    </body></html>
+        .match-slip {
+          width: 100%;
+          page-break-after: always;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+
+        .player-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .player-box {
+          border: 2px solid #000;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 170px;
+        }
+
+        .player-header {
+          margin-bottom: 12px;
+          font-size: 15px;
+        }
+
+        .ranking-line {
+          display: flex;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .ranking-line span {
+          border: 1px solid #000;
+          padding: 4px 10px;
+          min-width: 20px;
+          text-align: center;
+        }
+
+        .signature-line {
+          margin-top: auto;
+        }
+
+        .slip-footer {
+          margin-top: 30px;
+          text-align: center;
+          font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      ${slipsHTML}
+    </body>
+    </html>
   `;
 
-  openPrintWindow(`Round ${round.number} Match Slips`, html);
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
 }
 
 function printFinalStandings() {
