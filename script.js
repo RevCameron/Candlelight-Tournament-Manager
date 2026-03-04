@@ -967,6 +967,12 @@ function buildSlipHTML(pod, podIndex, round) {
 
   return `
     <div class="match-slip">
+
+      <div class="slip-header">
+        <div class="tournament-name">${tournament.name}</div>
+        <div class="round-info">Round ${round.number} – Pod ${podIndex + 1}</div>
+      </div>
+
       <div class="player-grid">
 
         ${[0,1,2,3].map(i => {
@@ -998,9 +1004,6 @@ function buildSlipHTML(pod, podIndex, round) {
 
       </div>
 
-      <div class="slip-footer">
-        ${tournament.name} – Round ${round.number} – Pod ${podIndex + 1}
-      </div>
     </div>
   `;
 }
