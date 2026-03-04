@@ -759,6 +759,7 @@ function formatPercent(decimalValue) {
 
 function openPrintWindow(documentTitle, html) {
   const printWindow = window.open("", "_blank");
+
   if (!printWindow) {
     alert("Popup blocked. Please allow popups for this site to print documents.");
     return;
@@ -956,10 +957,7 @@ function printRoundMatchSlips(roundNumber) {
     </html>
   `;
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.print();
+openPrintWindow("Round " + round.number + " Match Slips", html);
 }
 
 
