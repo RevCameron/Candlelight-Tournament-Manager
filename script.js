@@ -837,7 +837,7 @@ function printRoundMatchSlips(roundNumber) {
 
   round.pods.forEach((pod, podIndex) => {
 
-    const players = pod;
+    const players = pod.players;
 
     slipsHTML += `
       <div class="match-slip">
