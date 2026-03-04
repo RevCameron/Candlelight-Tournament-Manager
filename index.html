@@ -1,98 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Candlelight Tournament Manager</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candlelight Tournament Manager</title>
+<style>
+body { font-family: Arial, sans-serif; padding:20px; }
+h1,h2 { margin-bottom:10px; }
+button { padding:6px 12px; margin-top:8px; }
+input, select { padding:5px; margin:5px 0; }
+.pod { border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:8px; }
+.player-option { margin:5px 0; }
+table { border-collapse: collapse; margin-top:15px; }
+th, td { border:1px solid #ccc; padding:6px 10px; text-align:center; }
+.locked { opacity:0.6; pointer-events:none; }
+</style>
 </head>
 <body>
-    <h1>Candlelight Tournament Manager</h1>
 
-    <div id="setup">
-        <h2>Create Event</h2>
+<h1>Candlelight Tournament Manager</h1>
 
-  <label for="gameSelect">Game:</label>
+<div id="setup">
+  <h2>Create Event</h2>
+
+  <label>Tournament Name:</label><br>
+  <input type="text" id="tournamentName"><br>
+
+  <label>Game:</label><br>
   <select id="gameSelect">
     <option value="commander">MTG Commander</option>
     <option value="twin">SWU Twin Suns</option>
-  </select>
+  </select><br>
 
-        <label for="roundCount">Number of Rounds:</label>
-        <input type="number" id="roundCount" value="3" min="1" max="10">
-        
-<label for="tournamentName">Tournament Name:</label>
-<input type="text" id="tournamentName" placeholder="Enter tournament name">
-        
-        <button onclick="createTournament()">Start Event</button>
-    </div>
+  <label>Number of Rounds:</label><br>
+  <input type="number" id="roundCount" value="3" min="1" max="10"><br>
 
-    <div id="registration" style="display:none;">
-        <h2>Player Registration</h2>
+  <button onclick="createTournament()">Start Event</button>
+</div>
 
-        <input
-            type="text"
-            id="playerName"
-            placeholder="Enter player name"
-            onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayer(); }"
-        >
-        <button type="button" onclick="addPlayer()">Add Player</button>
+<div id="registration" style="display:none;">
+  <h2>Player Registration</h2>
 
-        <ul id="playerList"></ul>
+  <input type="text"
+         id="playerName"
+         placeholder="Enter player name"
+         onkeydown="if(event.key==='Enter'){addPlayer()}">
 
-        <button onclick="startRounds()">Start Tournament</button>
-    </div>
+  <button onclick="addPlayer()">Add Player</button>
 
-    <div id="tournament" style="display:none;">
-        <h2 id="roundHeader"></h2>
+  <ul id="playerList"></ul>
 
-        <div id="roundTabs" class="round-tabs"></div>
-        <div id="roundControls" class="round-controls"></div>
-        <div id="fastResultControls" class="fast-result-controls">
-            <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
-            <input
-                id="tournamentFastCode"
-                type="text"
-                placeholder="Round+Pod+P1P2P3P4 (separate multiple with spaces or commas)"
-                onkeydown="if(event.key === 'Enter') { event.preventDefault(); applyTournamentFastCodes(); }"
-            >
-            <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
-        </div>
+  <button onclick="startTournament()">Start Tournament</button>
+</div>
 
-        <div id="pairings"></div>
+<div id="tournament" style="display:none;">
+  <h2 id="roundHeader"></h2>
+  <div id="pairings"></div>
 
-        <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
-        <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
+  <button id="nextRoundBtn" onclick="generateNextRound()" disabled>
+    Generate Next Round
+  </button>
 
-        <h2>Standings</h2>
-        <table id="standingsTable" border="1">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Match Points</th>
-                    <th>OMW%</th>
-                    <th id="gwpHeader">GW%</th>
-                    <th>OGW%</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+  <h2>Standings</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Points</th>
+        <th>OMW%</th>
+        <th>GW%</th>
+        <th>OGW%</th>
+      </tr>
+    </thead>
+    <tbody id="standingsBody"></tbody>
+  </table>
+</div>
 
-        <h2>Player Management</h2>
-        <p class="muted-text">Edit names or mark players as dropped/eliminated between rounds.</p>
-        <table id="playerManagementTable" border="1">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
