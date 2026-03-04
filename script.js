@@ -217,7 +217,7 @@ if (tournament.currentRound === 0) {
 function getPodSizes(playerCount) {
 
   if (playerCount === 5) {
-    return [5];
+    return [2,3];
   }
 
   for (let threePods = 0; threePods <= Math.floor(playerCount / 3); threePods += 1) {
