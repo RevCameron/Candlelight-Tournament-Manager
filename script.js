@@ -1087,6 +1087,78 @@ function printFinalStandings() {
   openPrintWindow("Final Standings", html);
 }
 
+function generatePlayerPortal() {
+
+  if (tournament.currentRound === 0) {
+    alert("Start the tournament first.");
+    return;
+  }
+
+  const round = tournament.rounds[tournament.currentRound - 1];
+
+  let pairingsHTML = `
+    <h2>${tournament.name}</h2>
+    <h3>Round ${round.number} Pairings</h3>
+  `;
+
+  round.pods.forEach((pod, podIndex) => {
+
+    const playerNames = pod.players
+      .map(id => findPlayer(id).name)
+      .join(", ");
+
+    pairingsHTML += `
+      <p><strong>Pod ${podIndex + 1}</strong>: ${playerNames}</p>
+    `;
+  });
+
+  const portalHTML = `
+  <html>
+  <head>
+    <title>${tournament.name} Pairings</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 40px;
+        text-align: center;
+      }
+
+      #qr {
+        margin-top: 30px;
+      }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+
+  <body>
+
+    ${pairingsHTML}
+
+    <div id="qr"></div>
+
+    <script>
+      new QRCode(document.getElementById("qr"), {
+        text: window.location.href,
+        width: 220,
+        height: 220
+      });
+    </script>
+
+  </body>
+  </html>
+  `;
+
+  const win = window.open("", "_blank");
+
+  if (!win) {
+    alert("Popup blocked.");
+    return;
+  }
+
+  win.document.write(portalHTML);
+  win.document.close();
+}
 
 function importJSON(content) {
     try {
@@ -1281,6 +1353,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printRoundPairings = printRoundPairings;
   window.printRoundMatchSlips = printRoundMatchSlips;
   window.printFinalStandings = printFinalStandings;
+  window.generatePlayerPortal = generatePlayerPortal;
   const fastCodeInput = document.getElementById("tournamentFastCode");
 
 if (fastCodeInput) {
