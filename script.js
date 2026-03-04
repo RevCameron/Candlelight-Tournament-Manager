@@ -217,7 +217,7 @@ if (tournament.currentRound === 0) {
 function getPodSizes(playerCount) {
 
   if (playerCount === 5) {
-    return [3,2];
+    return [5];
   }
 
   for (let threePods = 0; threePods <= Math.floor(playerCount / 3); threePods += 1) {
@@ -1156,4 +1156,14 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printRoundPairings = printRoundPairings;
   window.printRoundMatchSlips = printRoundMatchSlips;
   window.printFinalStandings = printFinalStandings;
+  const fastCodeInput = document.getElementById("tournamentFastCode");
+
+if (fastCodeInput) {
+  fastCodeInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applyTournamentFastCodes();
+    }
+  });
+}
 });
