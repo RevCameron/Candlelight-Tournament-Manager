@@ -6,7 +6,7 @@ function createTournament() {
   const rounds = parseInt(document.getElementById("roundCount").value);
 
   if (!name) {
-    alert("Enter a tournament name.");
+    alert("Enter tournament name.");
     return;
   }
 
@@ -30,24 +30,44 @@ function addPlayer() {
 
   tournament.players.push({
     name,
-    points: 0,
-    opponents: [],
-    gameWins: 0,
-    gameLosses: 0
+    points: 0
   });
 
   input.value = "";
-  renderPlayerList();
+  renderPlayerTable();
 }
 
-function renderPlayerList() {
-  const list = document.getElementById("playerList");
-  list.innerHTML = "";
-  tournament.players.forEach(p => {
-    const li = document.createElement("li");
-    li.textContent = p.name;
-    list.appendChild(li);
+function renderPlayerTable() {
+  const tbody = document.getElementById("playerTableBody");
+  tbody.innerHTML = "";
+
+  tournament.players.forEach((player, index) => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${player.name}</td>
+      <td>
+        <button class="small-btn" onclick="editPlayer(${index})">Edit</button>
+        <button class="small-btn" onclick="deletePlayer(${index})">Delete</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
   });
+}
+
+function editPlayer(index) {
+  const newName = prompt("Edit player name:", tournament.players[index].name);
+  if (!newName) return;
+
+  tournament.players[index].name = newName.trim();
+  renderPlayerTable();
+}
+
+function deletePlayer(index) {
+  if (!confirm("Delete this player?")) return;
+  tournament.players.splice(index, 1);
+  renderPlayerTable();
 }
 
 function startTournament() {
@@ -58,6 +78,7 @@ function startTournament() {
 
   document.getElementById("registration").style.display = "none";
   document.getElementById("tournament").style.display = "block";
+
   generateNextRound();
 }
 
@@ -93,48 +114,25 @@ function renderPods(pods) {
     title.textContent = `Pod ${podIndex + 1}`;
     div.appendChild(title);
 
-    if (tournament.game === "commander") {
-      pod.forEach((player, index) => {
-        const label = document.createElement("div");
-        label.className = "player-option";
-        label.innerHTML =
-          `<input type="radio" name="pod${podIndex}" value="${index}">
-           ${player.name}`;
-        div.appendChild(label);
-      });
+    pod.forEach((player, index) => {
+      const label = document.createElement("div");
+      label.className = "player-option";
+      label.innerHTML =
+        `<input type="radio" name="pod${podIndex}" value="${index}">
+         ${player.name}`;
+      div.appendChild(label);
+    });
 
-      const tieBtn = document.createElement("button");
-      tieBtn.textContent = "Mark as Tie";
-      tieBtn.onclick = () => submitCommanderTie(podIndex);
-      div.appendChild(tieBtn);
-
-      const submitBtn = document.createElement("button");
-      submitBtn.textContent = "Submit Result";
-      submitBtn.onclick = () => submitCommanderResult(podIndex);
-      div.appendChild(submitBtn);
-    }
-
-    if (tournament.game === "twin") {
-      pod.forEach((player, index) => {
-        const label = document.createElement("div");
-        label.className = "player-option";
-        label.innerHTML =
-          `<input type="radio" name="pod${podIndex}" value="${index}">
-           ${player.name}`;
-        div.appendChild(label);
-      });
-
-      const submitBtn = document.createElement("button");
-      submitBtn.textContent = "Submit Result";
-      submitBtn.onclick = () => submitTwinResult(podIndex);
-      div.appendChild(submitBtn);
-    }
+    const submitBtn = document.createElement("button");
+    submitBtn.textContent = "Submit Result";
+    submitBtn.onclick = () => submitResult(podIndex);
+    div.appendChild(submitBtn);
 
     container.appendChild(div);
   });
 }
 
-function submitCommanderResult(podIndex) {
+function submitResult(podIndex) {
   const radios = document.getElementsByName(`pod${podIndex}`);
   let winnerIndex = null;
 
@@ -149,46 +147,23 @@ function submitCommanderResult(podIndex) {
 
   const pod = tournament.rounds[tournament.currentRound - 1][podIndex];
 
-  pod.forEach((player, index) => {
-    if (index === winnerIndex) {
-      player.points += 5;
-    } else {
-      player.points += pod.length === 3 ? 1 : 3;
-    }
-  });
-
-  lockPod(podIndex);
-}
-
-function submitCommanderTie(podIndex) {
-  const pod = tournament.rounds[tournament.currentRound - 1][podIndex];
-  pod.forEach(player => player.points += 3);
-  lockPod(podIndex);
-}
-
-function submitTwinResult(podIndex) {
-  const radios = document.getElementsByName(`pod${podIndex}`);
-  let winnerIndex = null;
-
-  radios.forEach(r => {
-    if (r.checked) winnerIndex = parseInt(r.value);
-  });
-
-  if (winnerIndex === null) {
-    alert("Select a winner.");
-    return;
+  if (tournament.game === "commander") {
+    pod.forEach((player, index) => {
+      if (index === winnerIndex) {
+        player.points += 5;
+      } else {
+        player.points += pod.length === 3 ? 1 : 3;
+      }
+    });
   }
 
-  const pod = tournament.rounds[tournament.currentRound - 1][podIndex];
-
-  pod.forEach((player, index) => {
-    if (index === winnerIndex) {
-      player.points += 3;
-      player.gameWins++;
-    } else {
-      player.gameLosses++;
-    }
-  });
+  if (tournament.game === "twin") {
+    pod.forEach((player, index) => {
+      if (index === winnerIndex) {
+        player.points += 3;
+      }
+    });
+  }
 
   lockPod(podIndex);
 }
@@ -221,9 +196,6 @@ function updateStandings() {
       tr.innerHTML = `
         <td>${player.name}</td>
         <td>${player.points}</td>
-        <td>—</td>
-        <td>—</td>
-        <td>—</td>
       `;
       tbody.appendChild(tr);
     });
