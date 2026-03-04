@@ -145,12 +145,20 @@ function renderRound(pods) {
     const div = document.createElement("div");
     div.className = "pod";
 
-    div.innerHTML = `
-      <h3>Pod ${index + 1}</h3>
-      <p>${pod.players.join(" vs ")}</p>
-      <input type="text" id="result-${index}" placeholder="Enter 4-digit result code">
-      <button onclick="submitResult(${index})">Submit</button>
-    `;
+div.innerHTML = `
+  <h3>Pod ${index + 1}</h3>
+
+  <div class="player-grid">
+    ${pod.players.map(name => `
+      <div class="player-box">
+        ${name}
+      </div>
+    `).join("")}
+  </div>
+
+  <input type="text" id="result-${index}" placeholder="Enter 4-digit result code">
+  <button onclick="submitResult(${index})">Submit</button>
+`;
 
     container.appendChild(div);
   });
