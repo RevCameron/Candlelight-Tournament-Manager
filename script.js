@@ -923,11 +923,6 @@ function printRoundMatchSlips(roundNumber) {
           margin-top: auto;
         }
 
-        .slip-footer {
-          margin-top: 20px;
-          text-align: center;
-          font-weight: bold;
-        }
         .signature-line {
   margin-top: auto;
 }
