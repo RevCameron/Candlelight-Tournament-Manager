@@ -19,7 +19,7 @@ function createTournament() {
 
 tournament = {
   name: document.getElementById("tournamentName").value.trim() || "Tournament",
-  gameMode: document.getElementById("gameSelect").value,
+  gameMode: document.getElementById("gameMode").value,
   totalRounds: roundCount,
   currentRound: 0,
   viewingRound: 0,
