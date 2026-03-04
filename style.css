@@ -55,6 +55,22 @@ button {
   margin-bottom: 12px;
 }
 
+
+.fast-result-controls {
+  margin-bottom: 12px;
+  background: #f8f8ff;
+  border: 1px dashed #b8b8d8;
+  padding: 8px;
+}
+
+.fast-result-controls label {
+  margin-top: 0;
+}
+
+.fast-result-controls input {
+  min-width: 320px;
+}
+
 #pairings {
   margin-bottom: 16px;
 }
@@ -81,6 +97,7 @@ button {
 .pod-rank-table td {
   text-align: left;
 }
+
 
 .pod-status {
   color: #2f6f2f;
