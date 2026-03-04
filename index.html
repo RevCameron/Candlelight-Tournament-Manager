@@ -45,6 +45,16 @@
 
         <div id="roundTabs" class="round-tabs"></div>
         <div id="roundControls" class="round-controls"></div>
+        <div id="fastResultControls" class="fast-result-controls">
+            <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>1:1324, 2:D</code>)</label>
+            <input
+                id="tournamentFastCode"
+                type="text"
+                placeholder="Pod:Code pairs for current round"
+                onkeydown="if(event.key === 'Enter') { event.preventDefault(); applyTournamentFastCodes(); }"
+            >
+            <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
+        </div>
 
         <div id="pairings"></div>
 
