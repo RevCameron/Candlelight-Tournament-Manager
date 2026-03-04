@@ -17,15 +17,16 @@ function createTournament() {
     return;
   }
 
-  tournament = {
-    gameMode: document.getElementById("gameMode").value,
-    totalRounds: roundCount,
-    currentRound: 0,
-    viewingRound: 0,
-    players: [],
-    rounds: [],
-    nextPlayerId: 1
-  };
+tournament = {
+  name: document.getElementById("tournamentName").value.trim() || "Tournament",
+  gameMode: document.getElementById("gameMode").value,
+  totalRounds: roundCount,
+  currentRound: 0,
+  viewingRound: 0,
+  players: [],
+  rounds: [],
+  nextPlayerId: 1
+};
 
   document.getElementById("setup").style.display = "none";
   document.getElementById("registration").style.display = "block";
@@ -168,15 +169,35 @@ function shuffleArray(items) {
 }
 
 function buildPods() {
-  let sortedPlayers = [...tournament.players]
-    .filter(player => player.status === "active");
+let sortedPlayers = [...tournament.players]
+  .filter(player => player.status === "active");
 
-  if (tournament.currentRound === 0) {
-    sortedPlayers = shuffleArray(sortedPlayers);
-  } else {
-    sortedPlayers = sortedPlayers.sort((a, b) => b.matchPoints - a.matchPoints);
-  }
+if (tournament.currentRound === 0) {
+  // Round 1: completely random
+  sortedPlayers = shuffleArray(sortedPlayers);
+} else {
+  // Later rounds: group by match points
+  const groups = {};
 
+  sortedPlayers.forEach(player => {
+    if (!groups[player.matchPoints]) {
+      groups[player.matchPoints] = [];
+    }
+    groups[player.matchPoints].push(player);
+  });
+
+  // Sort match point brackets high → low
+  const sortedPointValues = Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  // Randomize inside each bracket
+  sortedPlayers = [];
+  sortedPointValues.forEach(points => {
+    const shuffledGroup = shuffleArray(groups[points]);
+    sortedPlayers.push(...shuffledGroup);
+  });
+}
   const podSizes = getPodSizes(sortedPlayers.length);
   if (!podSizes) {
     alert("Unable to make only 3-4 player pods with active player count.");
@@ -194,6 +215,11 @@ function buildPods() {
 }
 
 function getPodSizes(playerCount) {
+
+  if (playerCount === 5) {
+    return [3,2];
+  }
+
   for (let threePods = 0; threePods <= Math.floor(playerCount / 3); threePods += 1) {
     const remaining = playerCount - (threePods * 3);
     if (remaining >= 0 && remaining % 4 === 0) {
@@ -201,6 +227,7 @@ function getPodSizes(playerCount) {
       return [...Array(fourPods).fill(4), ...Array(threePods).fill(3)];
     }
   }
+
   return null;
 }
 
@@ -345,43 +372,32 @@ function parseFastCodeForPod(pod, codeDigits) {
     return { draw: true };
   }
 
-  if (playerCount === 3) {
-    if (!/^([1-3])([1-3])([1-3])0$/.test(codeDigits)) {
-      return { error: "For 3-player pods, use three ranks plus a trailing 0 (example: 1320)." };
-    }
-
-    const firstThree = codeDigits.slice(0, 3).split("").map(value => parseInt(value, 10));
-    const uniqueRanks = new Set(firstThree);
-    if (uniqueRanks.size !== 3 || ![1, 2, 3].every(rank => uniqueRanks.has(rank))) {
-      return { error: "For 3-player pods, ranks must be 1, 2, and 3 exactly once." };
-    }
-
-    const rankings = {};
-    for (let i = 0; i < 3; i += 1) {
-      rankings[pod.players[i]] = firstThree[i];
-    }
-    return { rankings };
+  if (!/^\d{4}$/.test(codeDigits)) {
+    return { error: "Placement section must be exactly 4 digits." };
   }
 
-  if (playerCount === 4) {
-    if (!/^[1-4]{4}$/.test(codeDigits)) {
-      return { error: "For 4-player pods, code must use four digits between 1 and 4." };
-    }
+  const ranks = codeDigits.split("").map(d => parseInt(d, 10));
 
-    const ranks = codeDigits.split("").map(value => parseInt(value, 10));
-    const uniqueRanks = new Set(ranks);
-    if (uniqueRanks.size !== 4 || ![1, 2, 3, 4].every(rank => uniqueRanks.has(rank))) {
-      return { error: "For 4-player pods, ranks must be 1, 2, 3, and 4 exactly once." };
-    }
+  const nonZeroRanks = ranks.slice(0, playerCount);
 
-    const rankings = {};
-    for (let i = 0; i < 4; i += 1) {
-      rankings[pod.players[i]] = ranks[i];
-    }
-    return { rankings };
+  if (nonZeroRanks.includes(0)) {
+    return { error: "Active players cannot have rank 0." };
   }
 
-  return { error: "Unsupported pod size for fast code." };
+  const expectedRanks = Array.from({ length: playerCount }, (_, i) => i + 1);
+  const uniqueRanks = new Set(nonZeroRanks);
+
+  if (uniqueRanks.size !== playerCount ||
+      !expectedRanks.every(rank => uniqueRanks.has(rank))) {
+    return { error: "Ranks must be sequential starting at 1." };
+  }
+
+  const rankings = {};
+  for (let i = 0; i < playerCount; i++) {
+    rankings[pod.players[i]] = ranks[i];
+  }
+
+  return { rankings };
 }
 
 function applyTournamentFastCodes() {
@@ -837,17 +853,26 @@ function printRoundMatchSlips(roundNumber) {
       <div class="slip">
         <h3>Round ${round.number} - Pod ${index + 1}</h3>
 
-        <h4>Player Place Blocks</h4>
-        <div class="place-blocks">
-          ${players.map((playerName, playerIndex) => `
-            <div class="place-block">
-              <strong>Player ${playerIndex + 1}</strong><br>
-              ${playerName}<br>
-              Place: ${playerIndex === 3 && players.length === 3 ? "0" : "____"}
-            </div>
-          `).join("")}
-          ${players.length === 3 ? `<div class="place-block"><strong>Player 4</strong><br>Not used in 3-player pod<br>Place: 0</div>` : ""}
+<h4>Player Place Blocks</h4>
+<div class="place-blocks">
+  ${[0,1,2,3].map(i => {
+    const playerName = players[i];
+    if (!playerName) {
+      return `
+        <div class="place-block">
+          <strong>Player ${i + 1}</strong>
         </div>
+      `;
+    }
+    return `
+      <div class="place-block">
+        <strong>Player ${i + 1}</strong>
+        <div>${playerName}</div>
+        <div>Place: ______</div>
+      </div>
+    `;
+  }).join("")}
+</div>
 
         <h4>Ranking Grid</h4>
         <table class="slip-table">
@@ -894,11 +919,24 @@ function printRoundMatchSlips(roundNumber) {
       li{margin:2px 0}
       h4{margin-bottom:4px}
       code{font-family:monospace}
-      .place-blocks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-      .place-block{border:1px solid #aaa;padding:8px;min-width:180px;text-align:left}
+.place-blocks{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.place-block{
+  border:1px solid #444;
+  padding:12px;
+  min-height:90px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
     </style>
     </head><body>
-    <h2>Round ${round.number} Match Slips</h2>
+<h2>${tournament.name} – Round ${round.number} Match Slips</h2>
     ${slips}
     </body></html>
   `;
