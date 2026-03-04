@@ -704,7 +704,20 @@ function updateStandings() {
   const tbody = document.querySelector("#standingsTable tbody");
   tbody.innerHTML = "";
 
-  const sorted = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
+const sorted = [...tournament.players].sort((a, b) => {
+
+  if (b.matchPoints !== a.matchPoints) {
+    return b.matchPoints - a.matchPoints;
+  }
+
+  const omwDiff = calculateOmw(b) - calculateOmw(a);
+  if (omwDiff !== 0) return omwDiff;
+
+  const gwDiff = calculateGwp(b) - calculateGwp(a);
+  if (gwDiff !== 0) return gwDiff;
+
+  return calculateOgw(b) - calculateOgw(a);
+});
   sorted.forEach(player => {
     tbody.innerHTML += `
       <tr>
@@ -1137,7 +1150,79 @@ function importRoster() {
 
     reader.readAsText(file);
 }
+function saveTournament() {
 
+  const data = JSON.stringify(tournament);
+  const blob = new Blob([data], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tournament-save.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+function saveTournament() {
+
+  const data = JSON.stringify(tournament);
+  const blob = new Blob([data], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tournament-save.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function loadTournament(fileContent) {
+
+  try {
+
+    const data = JSON.parse(fileContent);
+
+    tournament = data;
+
+    renderPlayerList();
+
+    if (tournament.currentRound > 0) {
+
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("registration").style.display = "none";
+      document.getElementById("tournament").style.display = "block";
+
+      renderRoundTabs();
+      renderRoundView(tournament.viewingRound);
+      updateStandings();
+      renderPlayerManagement();
+    }
+
+  } catch (err) {
+    alert("Invalid tournament save file.");
+  }
+}
+
+function importTournamentSave() {
+
+  const fileInput = document.getElementById("saveFile");
+
+  if (!fileInput.files.length) {
+    alert("Select a save file.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    loadTournament(e.target.result);
+  };
+
+  reader.readAsText(fileInput.files[0]);
+}
 
 document.addEventListener("DOMContentLoaded", function () {
   window.createTournament = createTournament;
