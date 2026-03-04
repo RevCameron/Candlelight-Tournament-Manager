@@ -167,6 +167,26 @@ function shuffleArray(items) {
   }
   return copy;
 }
+function countRepeatOpponents(pods) {
+
+  let repeats = 0;
+
+  pods.forEach(pod => {
+    for (let i = 0; i < pod.length; i++) {
+
+      const player = findPlayer(pod[i]);
+
+      for (let j = i + 1; j < pod.length; j++) {
+        if (player.opponents.includes(pod[j])) {
+          repeats += 1;
+        }
+      }
+
+    }
+  });
+
+  return repeats;
+}
 
 function buildPods() {
 let sortedPlayers = [...tournament.players]
@@ -204,14 +224,34 @@ if (tournament.currentRound === 0) {
     return [];
   }
 
+const ATTEMPTS = 200;
+
+let bestPods = null;
+let bestScore = Infinity;
+
+for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+
+  const shuffled = shuffleArray(sortedPlayers);
+
   const pods = [];
   let cursor = 0;
+
   podSizes.forEach(size => {
-    pods.push(sortedPlayers.slice(cursor, cursor + size).map(player => player.id));
+    pods.push(shuffled.slice(cursor, cursor + size).map(player => player.id));
     cursor += size;
   });
 
-  return pods;
+  const score = countRepeatOpponents(pods);
+
+  if (score < bestScore) {
+    bestScore = score;
+    bestPods = pods;
+  }
+
+  if (score === 0) break;
+}
+
+return bestPods;
 }
 
 function getPodSizes(playerCount) {
