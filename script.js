@@ -1034,6 +1034,111 @@ function printFinalStandings() {
   openPrintWindow("Final Standings", html);
 }
 
+
+function importJSON(content) {
+    try {
+        const data = JSON.parse(content);
+
+        const players = data
+.filter(p => p.StatusDescription && p.StatusDescription.includes("Enrolled"))
+            .map(p => p.PlayerName);
+
+        loadPlayersIntoTournament(players);
+
+    } catch (err) {
+        alert("Invalid JSON file.");
+        console.error(err);
+    }
+}
+
+function importCSV(content) {
+const lines = content.trim().split(/\r?\n/);
+    const headers = lines[0].split(",");
+
+    const nameIndex = headers.findIndex(h => h.includes("PlayerName"));
+
+    if (nameIndex === -1) {
+        alert("Could not find PlayerName column.");
+        return;
+    }
+
+    const players = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",");
+        if (cols[nameIndex]) {
+            players.push(cols[nameIndex].replace(/"/g, "").trim());
+        }
+    }
+
+    loadPlayersIntoTournament(players);
+}
+
+function loadPlayersIntoTournament(playerNames) {
+
+    if (tournament.players.length > 0) {
+        const confirmReplace = confirm("Replace existing player list?");
+        if (!confirmReplace) return;
+    }
+
+    tournament.players = [];
+    tournament.nextPlayerId = 1;
+
+    playerNames.forEach(name => {
+
+        const trimmed = name.trim();
+        if (!trimmed) return;
+
+        tournament.players.push({
+            id: tournament.nextPlayerId,
+            name: trimmed,
+            status: "active",
+            matchPoints: 0,
+            matchesPlayed: 0,
+            gameWins: 0,
+            gameLosses: 0,
+            gameDraws: 0,
+            opponents: []
+        });
+
+        tournament.nextPlayerId += 1;
+    });
+
+    renderPlayerList();
+}
+
+function importRoster() {
+
+    if (tournament.currentRound > 0) {
+        alert("Cannot import roster after rounds have started.");
+        return;
+    }
+
+    const fileInput = document.getElementById("rosterFile");
+    if (!fileInput || !fileInput.files.length) {
+        alert("Please select a file.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const content = e.target.result;
+
+        if (file.name.toLowerCase().endsWith(".json")) {
+            importJSON(content);
+        } else if (file.name.toLowerCase().endsWith(".csv")) {
+            importCSV(content);
+        } else {
+            alert("Unsupported file type.");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+
 document.addEventListener("DOMContentLoaded", function () {
   window.createTournament = createTournament;
   window.addPlayer = addPlayer;
