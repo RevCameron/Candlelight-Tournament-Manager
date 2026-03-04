@@ -365,12 +365,8 @@ function reportPodRanking(roundNumber, podIndex) {
 function parseFastCodeForPod(pod, codeDigits) {
   const playerCount = pod.players.length;
 
-  if (codeDigits === "0000") {
-    return { draw: true };
-  }
-
   if (!/^[0-4]{4}$/.test(codeDigits)) {
-    return { error: "Use 4 digits (0–4 only)." };
+    return { error: "Use exactly 4 digits (0–4 only)." };
   }
 
   const ranks = codeDigits.split("").map(n => parseInt(n, 10));
@@ -378,10 +374,12 @@ function parseFastCodeForPod(pod, codeDigits) {
   const activeRanks = ranks.slice(0, playerCount);
   const unusedRanks = ranks.slice(playerCount);
 
+  // Unused positions must be 0
   if (unusedRanks.some(r => r !== 0)) {
     return { error: "Unused player positions must be 0." };
   }
 
+  // All zero = full pod draw
   if (activeRanks.every(r => r === 0)) {
     return { draw: true };
   }
@@ -392,7 +390,7 @@ function parseFastCodeForPod(pod, codeDigits) {
     return { error: "Ranks must be unique for active players." };
   }
 
-  const expected = Array.from({length: playerCount}, (_, i) => i + 1);
+  const expected = Array.from({ length: playerCount }, (_, i) => i + 1);
   if (!expected.every(rank => uniqueRanks.has(rank))) {
     return { error: "Ranks must be sequential starting at 1." };
   }
@@ -403,26 +401,6 @@ function parseFastCodeForPod(pod, codeDigits) {
   }
 
   return { rankings };
-}
-  if (playerCount === 4) {
-    if (!/^[1-4]{4}$/.test(codeDigits)) {
-      return { error: "For 4-player pods, code must use four digits between 1 and 4." };
-    }
-
-    const ranks = codeDigits.split("").map(value => parseInt(value, 10));
-    const uniqueRanks = new Set(ranks);
-    if (uniqueRanks.size !== 4 || ![1, 2, 3, 4].every(rank => uniqueRanks.has(rank))) {
-      return { error: "For 4-player pods, ranks must be 1, 2, 3, and 4 exactly once." };
-    }
-
-    const rankings = {};
-    for (let i = 0; i < 4; i += 1) {
-      rankings[pod.players[i]] = ranks[i];
-    }
-    return { rankings };
-  }
-
-  return { error: "Unsupported pod size for fast code." };
 }
 
 function applyTournamentFastCodes() {
