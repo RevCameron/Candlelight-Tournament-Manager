@@ -833,66 +833,55 @@ function printRoundMatchSlips(roundNumber) {
     return;
   }
 
-  let slipsHTML = "";
+  const totalPods = round.pods.length;
+  const half = Math.ceil(totalPods / 2);
 
-  round.pods.forEach((pod, podIndex) => {
+  // Reorder pods for cut-stack printing
+  const orderedPods = [];
+  for (let i = 0; i < half; i++) {
+    if (round.pods[i]) orderedPods.push({ pod: round.pods[i], index: i });
+    if (round.pods[i + half]) orderedPods.push({ pod: round.pods[i + half], index: i + half });
+  }
 
-    const players = pod.players;
+  let pagesHTML = "";
 
-    slipsHTML += `
-      <div class="match-slip">
-        <div class="player-grid">
+  for (let i = 0; i < orderedPods.length; i += 2) {
 
-          ${[0,1,2,3].map(i => {
-            const player = tournament.players.find(p => p.id === players[i]);
-            const name = player ? player.name : "";
-            const points = player ? player.matchPoints : "";
+    const top = orderedPods[i];
+    const bottom = orderedPods[i + 1];
 
-            return `
-              <div class="player-box">
-                <div class="player-header">
-                  <strong>Player ${i + 1}:</strong> ${name} ${name ? `(${points})` : ""}
-                </div>
-
-                <div class="ranking-line">
-                  Ranking:
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>TIE</span>
-                </div>
-
-                <div class="signature-line">
-                  Signature: ___________________________
-                </div>
-              </div>
-            `;
-          }).join("")}
-
-        </div>
-
-        <div class="slip-footer">
-          ${tournament.name} – Round ${round.number} – Pod ${podIndex + 1}
-        </div>
+    pagesHTML += `
+      <div class="print-page">
+        ${buildSlipHTML(top.pod, top.index, round)}
+        ${bottom ? buildSlipHTML(bottom.pod, bottom.index, round) : ""}
       </div>
     `;
-  });
+  }
 
   const html = `
     <html>
     <head>
       <title>Round ${round.number} Match Slips</title>
       <style>
+
         body {
           font-family: Arial, sans-serif;
+          margin: 0;
+        }
+
+        .print-page {
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          page-break-after: always;
         }
 
         .match-slip {
-          width: 100%;
-          page-break-after: always;
           padding: 20px;
           box-sizing: border-box;
+          height: 48%;
+          border-bottom: 2px dashed #999;
         }
 
         .player-grid {
@@ -907,7 +896,7 @@ function printRoundMatchSlips(roundNumber) {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          min-height: 170px;
+          min-height: 150px;
         }
 
         .player-header {
@@ -934,17 +923,69 @@ function printRoundMatchSlips(roundNumber) {
         }
 
         .slip-footer {
-          margin-top: 30px;
+          margin-top: 20px;
           text-align: center;
           font-weight: bold;
         }
+
       </style>
     </head>
     <body>
-      ${slipsHTML}
+      ${pagesHTML}
     </body>
     </html>
   `;
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+
+function buildSlipHTML(pod, podIndex, round) {
+
+  const players = pod.players;
+
+  return `
+    <div class="match-slip">
+      <div class="player-grid">
+
+        ${[0,1,2,3].map(i => {
+          const player = tournament.players.find(p => p.id === players[i]);
+          const name = player ? player.name : "";
+          const points = player ? player.matchPoints : "";
+
+          return `
+            <div class="player-box">
+              <div class="player-header">
+                <strong>Player ${i + 1}:</strong> ${name} ${name ? `(${points})` : ""}
+              </div>
+
+              <div class="ranking-line">
+                Ranking:
+                <span>1</span>
+                <span>2</span>
+                <span>3</span>
+                <span>4</span>
+                <span>TIE</span>
+              </div>
+
+              <div class="signature-line">
+                Signature: ___________________________
+              </div>
+            </div>
+          `;
+        }).join("")}
+
+      </div>
+
+      <div class="slip-footer">
+        ${tournament.name} – Round ${round.number} – Pod ${podIndex + 1}
+      </div>
+    </div>
+  `;
+}
 
   const printWindow = window.open("", "_blank");
   printWindow.document.write(html);
