@@ -277,6 +277,117 @@ function reportPodRanking(roundNumber, podIndex) {
     return;
   }
 
+  applyPodRankingResult(roundNumber, podIndex, rankings);
+}
+
+function parseFastCodeForPod(pod, rawCode) {
+  const normalizedCode = rawCode.trim().toUpperCase();
+  if (!normalizedCode) {
+    return { error: "Result code cannot be empty." };
+  }
+
+  if (normalizedCode === "D" || normalizedCode === "DRAW") {
+    return { draw: true };
+  }
+
+  const normalized = normalizedCode.replace(/[^0-9]/g, "");
+  const playerCount = pod.players.length;
+
+  if (normalized.length !== playerCount) {
+    return { error: `Code must include exactly ${playerCount} seat numbers.` };
+  }
+
+  const usedSeats = new Set();
+  const rankings = {};
+
+  for (let rankIndex = 0; rankIndex < normalized.length; rankIndex += 1) {
+    const seatNumber = parseInt(normalized[rankIndex], 10);
+    if (!seatNumber || seatNumber < 1 || seatNumber > playerCount) {
+      return { error: `Seat numbers must be between 1 and ${playerCount}.` };
+    }
+
+    if (usedSeats.has(seatNumber)) {
+      return { error: "Each seat number can only be used once in a code." };
+    }
+
+    usedSeats.add(seatNumber);
+    const playerId = pod.players[seatNumber - 1];
+    rankings[playerId] = rankIndex + 1;
+  }
+
+  return { rankings };
+}
+
+function applyTournamentFastCodes() {
+  const roundNumber = tournament.viewingRound;
+  const round = tournament.rounds[roundNumber - 1];
+  if (!round) {
+    alert("Open a round tab first.");
+    return;
+  }
+
+  const input = document.getElementById("tournamentFastCode");
+  if (!input) return;
+
+  const raw = input.value.trim();
+  if (!raw) {
+    alert("Enter fast codes first. Example: 1:1324, 2:D");
+    return;
+  }
+
+  const entries = raw
+    .split(/[,;\n]+/)
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (entries.length === 0) {
+    alert("No valid fast-code entries found.");
+    return;
+  }
+
+  for (const entry of entries) {
+    const match = entry.match(/^P?(\d+)\s*[:=]\s*(.+)$/i);
+    if (!match) {
+      alert(`Invalid entry format: ${entry}. Use Pod:Code, e.g. 1:1324`);
+      return;
+    }
+
+    const podNumber = parseInt(match[1], 10);
+    const code = match[2].trim();
+
+    if (!podNumber || podNumber < 1 || podNumber > round.pods.length) {
+      alert(`Pod ${podNumber} does not exist in Round ${roundNumber}.`);
+      return;
+    }
+
+    const podIndex = podNumber - 1;
+    const pod = round.pods[podIndex];
+
+    if (pod.locked) {
+      alert(`Pod ${podNumber} is already locked. Click Edit Result first if needed.`);
+      return;
+    }
+
+    const parsed = parseFastCodeForPod(pod, code);
+    if (parsed.error) {
+      alert(`Pod ${podNumber}: ${parsed.error}`);
+      return;
+    }
+
+    if (parsed.draw) {
+      reportPodDraw(roundNumber, podIndex);
+    } else {
+      applyPodRankingResult(roundNumber, podIndex, parsed.rankings);
+    }
+  }
+
+  input.value = "";
+}
+
+function applyPodRankingResult(roundNumber, podIndex, rankings) {
+  const pod = getPod(roundNumber, podIndex);
+  if (!pod || pod.locked) return;
+
   pod.result = {
     type: "ranking",
     rankings
@@ -616,6 +727,29 @@ function printRoundPairings(roundNumber) {
   openPrintWindow(`Round ${round.number} Pairings`, html);
 }
 
+function getPermutationCodes(playerNames) {
+  const seatNumbers = playerNames.map((_, i) => String(i + 1));
+  const results = [];
+
+  function permute(remaining, built) {
+    if (remaining.length === 0) {
+      const orderedNames = built.map(seat => playerNames[parseInt(seat, 10) - 1]).join(" > ");
+      results.push({ code: built.join(""), orderedNames });
+      return;
+    }
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const next = remaining[i];
+      const rest = [...remaining.slice(0, i), ...remaining.slice(i + 1)];
+      permute(rest, [...built, next]);
+    }
+  }
+
+  permute(seatNumbers, []);
+
+  return results.map(entry => `<li><code>${entry.code}</code> = ${entry.orderedNames}</li>`).join("");
+}
+
 function printRoundMatchSlips(roundNumber) {
   const round = tournament.rounds[roundNumber - 1];
   if (!round) return;
@@ -630,6 +764,13 @@ function printRoundMatchSlips(roundNumber) {
       </tr>
     `).join("");
 
+    const seatMapRows = players.map((playerName, seatIndex) => `
+      <tr>
+        <td>${seatIndex + 1}</td>
+        <td>${playerName}</td>
+      </tr>
+    `).join("");
+
     const signatureRows = players.map(playerName => `
       <tr>
         <td>${playerName}</td>
@@ -637,9 +778,26 @@ function printRoundMatchSlips(roundNumber) {
       </tr>
     `).join("");
 
+    const permutationCodes = getPermutationCodes(players);
+
     return `
       <div class="slip">
         <h3>Round ${round.number} - Pod ${index + 1}</h3>
+
+        <h4>Seat Map</h4>
+        <table class="sig-table">
+          <thead>
+            <tr>
+              <th>Seat</th>
+              <th>Player</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${seatMapRows}
+          </tbody>
+        </table>
+
+        <h4>Ranking Grid</h4>
         <table class="slip-table">
           <thead>
             <tr>
@@ -651,7 +809,11 @@ function printRoundMatchSlips(roundNumber) {
             ${rankingRows}
           </tbody>
         </table>
-        <p><strong>Tie:</strong> ○</p>
+        <p><strong>Tie Code:</strong> <code>D</code> ○</p>
+
+        <h4>Fast Result Codes</h4>
+        <p>Write one code in this box: __________</p>
+        <ul>${permutationCodes}</ul>
 
         <h4>Player Signatures</h4>
         <table class="sig-table">
@@ -676,7 +838,10 @@ function printRoundMatchSlips(roundNumber) {
       .slip{border:1px solid #333;padding:12px;margin-bottom:14px;page-break-inside:avoid}
       table{width:100%;border-collapse:collapse;margin-top:8px}
       th,td{border:1px solid #aaa;padding:6px;text-align:center}
+      ul{margin:6px 0 0 16px;padding:0}
+      li{margin:2px 0}
       h4{margin-bottom:4px}
+      code{font-family:monospace}
     </style>
     </head><body>
     <h2>Round ${round.number} Match Slips</h2>
@@ -726,6 +891,7 @@ window.openRound = openRound;
 window.reportPodRanking = reportPodRanking;
 window.reportPodDraw = reportPodDraw;
 window.editPodResult = editPodResult;
+window.applyTournamentFastCodes = applyTournamentFastCodes;
 window.editPlayerName = editPlayerName;
 window.setPlayerStatus = setPlayerStatus;
 window.printRoundPairings = printRoundPairings;
