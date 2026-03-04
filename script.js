@@ -19,7 +19,7 @@ function createTournament() {
 
 tournament = {
   name: document.getElementById("tournamentName").value.trim() || "Tournament",
-  gameMode: document.getElementById("gameMode").value,
+  gameMode: document.getElementById("gameSelect").value,
   totalRounds: roundCount,
   currentRound: 0,
   viewingRound: 0,
@@ -1005,12 +1005,6 @@ function buildSlipHTML(pod, podIndex, round) {
       </div>
     </div>
   `;
-}
-
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.print();
 }
 
 function printFinalStandings() {
