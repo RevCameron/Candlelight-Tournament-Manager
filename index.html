@@ -64,7 +64,12 @@
 
         <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
         <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
+<button onclick="saveTournament()">Save Tournament</button>
 
+<input type="file" id="saveFile">
+<button onclick="importTournamentSave()">Load Tournament</button>
+
+<button onclick="generatePlayerPortal()">Generate Player Portal QR</button>
         <h2>Standings</h2>
         <table id="standingsTable" border="1">
             <thead>
