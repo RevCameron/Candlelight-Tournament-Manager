@@ -1036,19 +1036,21 @@ function printFinalStandings() {
   openPrintWindow("Final Standings", html);
 }
 
-window.createTournament = createTournament;
-window.addPlayer = addPlayer;
-window.editRegisteredPlayer = editRegisteredPlayer;
-window.deleteRegisteredPlayer = deleteRegisteredPlayer;
-window.startRounds = startRounds;
-window.nextRound = nextRound;
-window.openRound = openRound;
-window.reportPodRanking = reportPodRanking;
-window.reportPodDraw = reportPodDraw;
-window.editPodResult = editPodResult;
-window.applyTournamentFastCodes = applyTournamentFastCodes;
-window.editPlayerName = editPlayerName;
-window.setPlayerStatus = setPlayerStatus;
-window.printRoundPairings = printRoundPairings;
-window.printRoundMatchSlips = printRoundMatchSlips;
-window.printFinalStandings = printFinalStandings;
+document.addEventListener("DOMContentLoaded", function () {
+  window.createTournament = createTournament;
+  window.addPlayer = addPlayer;
+  window.editRegisteredPlayer = editRegisteredPlayer;
+  window.deleteRegisteredPlayer = deleteRegisteredPlayer;
+  window.startRounds = startRounds;
+  window.nextRound = nextRound;
+  window.openRound = openRound;
+  window.reportPodRanking = reportPodRanking;
+  window.reportPodDraw = reportPodDraw;
+  window.editPodResult = editPodResult;
+  window.applyTournamentFastCodes = applyTournamentFastCodes;
+  window.editPlayerName = editPlayerName;
+  window.setPlayerStatus = setPlayerStatus;
+  window.printRoundPairings = printRoundPairings;
+  window.printRoundMatchSlips = printRoundMatchSlips;
+  window.printFinalStandings = printFinalStandings;
+});
