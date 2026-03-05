@@ -105,8 +105,7 @@ button {
 
 .pod-card {
   background:
-    radial-gradient(circle at top, rgba(255,255,255,0.9), rgba(240,240,240,0.9)),
-    url("assets/playmat.jpg");
+    radial-gradient(circle at top, rgba(255,255,255,0.9), rgba(240,240,240,0.9)),;
   background-size: cover;
 
   border: 3px solid var(--candle-yellow);
