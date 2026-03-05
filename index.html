@@ -98,20 +98,38 @@ onkeypress="if(event.key==='Enter'){event.preventDefault();applyTournamentFastCo
         <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
 <button onclick="saveTournament()">Save Tournament</button>
 
-        <h2>Standings</h2>
-        <table id="standingsTable" border="1">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Match Points</th>
-                    <th>OMW%</th>
-                    <th id="gwpHeader">GW%</th>
-                    <th>OGW%</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+<div class="main-tabs">
+
+<button class="tab-button active-tab" onclick="openMainTab('roundTab')">
+Round
+</button>
+
+<button class="tab-button" onclick="openMainTab('playersTab')">
+Player Management
+</button>
+
+<button class="tab-button" onclick="openMainTab('standingsTab')">
+Standings
+</button>
+
+</div>
+
+
+<div id="roundTab" class="main-tab">
+<div id="pairings"></div>
+</div>
+
+
+<div id="playersTab" class="main-tab" style="display:none;">
+<h2>Player Management</h2>
+<table id="playerManagementTable"></table>
+</div>
+
+
+<div id="standingsTab" class="main-tab" style="display:none;">
+<h2>Standings</h2>
+<table id="standingsTable"></table>
+</div>
 
         <h2>Player Management</h2>
         <p class="muted-text">Edit names or mark players as dropped/eliminated between rounds.</p>
