@@ -95,7 +95,13 @@ onkeypress="if(event.key==='Enter'){event.preventDefault();applyTournamentFastCo
 </div>
 
         <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
-        <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
+<select id="printMenu" onchange="handlePrintMenu()">
+<option value="">Print...</option>
+<option value="pairings">Round Pairings</option>
+<option value="slips">Match Slips</option>
+<option value="standings">Standings</option>
+<option value="roster">Roster</option>
+</select>
 <button onclick="saveTournament()">Save Tournament</button>
 
 <div class="main-tabs">
