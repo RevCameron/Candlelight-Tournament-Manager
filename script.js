@@ -286,74 +286,40 @@ function renderRoundTabs() {
 }
 const urlParams = new URLSearchParams(window.location.search);
 
-function generatePlayerPortal(){
+function renderPortalView(){
 
-const portalURL =
-window.location.origin +
-window.location.pathname +
-"?portal=1";
+  const saved = localStorage.getItem("tournamentState");
 
-const qrWindow = window.open("", "_blank");
-
-qrWindow.document.write(`
-<html>
-<head>
-<title>Player Portal</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-</head>
-
-<body style="font-family:Arial;text-align:center;padding:40px">
-
-<h1>${tournament.name}</h1>
-
-<h2>Player Portal</h2>
-
-<p>Scan once — refresh each round</p>
-
-<canvas id="qr"></canvas>
-
-<p style="margin-top:20px">${portalURL}</p>
-
-<script>
-QRCode.toCanvas(
-document.getElementById('qr'),
-"${portalURL}",
-{width:300}
-);
-</script>
-
-</body>
-</html>
-`);
-
-qrWindow.document.close();
+if(saved){
+  tournament = JSON.parse(saved);
 }
+  if(!urlParams.has("portal")) return;
 
-if(!tournament || tournament.currentRound === 0){
-document.body.innerHTML = "<h2>Tournament has not started yet.</h2>";
-}
-else{
+  if(!tournament || tournament.currentRound === 0){
+    document.body.innerHTML = "<h2>Tournament has not started yet.</h2>";
+    return;
+  }
 
-const round = tournament.rounds[tournament.currentRound-1];
+  const round = tournament.rounds[tournament.currentRound-1];
 
-document.body.innerHTML = `
-<h1>${tournament.name}</h1>
-<h2>Round ${round.number} Pairings</h2>
+  document.body.innerHTML = `
+    <h1>${tournament.name}</h1>
+    <h2>Round ${round.number} Pairings</h2>
 
-${round.pods.map((pod,i)=>{
+    ${round.pods.map((pod,i)=>{
 
-const names = pod.players.map(id=>{
-const p = tournament.players.find(pl=>pl.id===id);
-return p ? p.name : "";
-});
+      const names = pod.players.map(id=>{
+        const p = tournament.players.find(pl=>pl.id===id);
+        return p ? p.name : "";
+      });
 
-return `<p><strong>Pod ${i+1}</strong>: ${names.join(", ")}</p>`;
+      return `<p><strong>Pod ${i+1}</strong>: ${names.join(", ")}</p>`;
 
-}).join("")}
+    }).join("")}
 
-<p style="margin-top:30px;font-size:12px">Refresh page for updates</p>
-`;
-}
+    <p style="margin-top:30px;font-size:12px">Refresh page for updates</p>
+  `;
+  setTimeout(() => location.reload(), 20000);
 }
 function openRound(roundNumber) {
   tournament.viewingRound = roundNumber;
