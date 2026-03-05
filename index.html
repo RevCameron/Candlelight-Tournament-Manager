@@ -49,11 +49,44 @@
         <button onclick="startRounds()">Start Tournament</button>
     </div>
 
-    <div id="tournament" class="panel" style="display:none;">
-        <h2 id="roundHeader"></h2>
+<div id="tournament" style="display:none;">
 
-        <div id="roundTabs" class="round-tabs"></div>
-        <div id="roundControls" class="round-controls"></div>
+<h2 id="roundHeader"></h2>
+
+<div id="roundTab" class="main-tab"></div>
+
+<div id="playersTab" class="main-tab" style="display:none;">
+<h2>Player Management</h2>
+<table id="playerManagementTable">
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<div id="standingsTab" class="main-tab" style="display:none;">
+<h2>Standings</h2>
+<table id="standingsTable">
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Match Points</th>
+<th>OMW%</th>
+<th>GW%</th>
+<th>OGW%</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+</div>
         <div id="fastResultControls" class="fast-result-controls">
             <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
 <input
@@ -104,21 +137,6 @@ Standings
 
 
 <div id="playersTab" class="main-tab" style="display:none;">
-
-<h2>Player Management</h2>
-
-<table id="playerManagementTable" border="1">
-<thead>
-<tr>
-<th>Name</th>
-<th>Status</th>
-<th>Actions</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-
-</div>
 
 <h2>Player Management</h2>
 
