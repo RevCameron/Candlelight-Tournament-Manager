@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Player Portal</title>
+
+<style>
+
+body{
+font-family: Arial;
+margin:40px;
+background:#f5f5f5;
+}
+
+h1{
+margin-bottom:10px;
+}
+
+.section{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:8px;
+box-shadow:0 2px 5px rgba(0,0,0,0.15);
+}
+
+table{
+border-collapse:collapse;
+width:100%;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+
+th{
+background:#333;
+color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1 id="tournamentName"></h1>
+
+<div class="section">
+<h2>Current Round Pairings</h2>
+<div id="pairings"></div>
+</div>
+
+<div class="section">
+<h2>Standings</h2>
+<div id="standings"></div>
+</div>
+
+<script>
+
+function loadTournament(){
+
+const data = localStorage.getItem("tournamentState");
+
+if(!data){
+document.body.innerHTML="<h2>No active tournament</h2>";
+return;
+}
+
+const tournament = JSON.parse(data);
+
+document.getElementById("tournamentName").innerText = tournament.name;
+
+renderPairings(tournament);
+renderStandings(tournament);
+
+}
+
+function renderPairings(tournament){
+
+const container = document.getElementById("pairings");
+
+if(tournament.rounds.length===0){
+container.innerHTML="No rounds yet";
+return;
+}
+
+const round = tournament.rounds[tournament.rounds.length-1];
+
+let html = "<table>";
+html += "<tr><th>Pod</th><th>Players</th></tr>";
+
+round.pods.forEach((pod,i)=>{
+
+const players = pod.players.map(id=>{
+const p = tournament.players.find(pl=>pl.id===id);
+return p ? p.name : "";
+}).join(", ");
+
+html += `<tr>
+<td>${i+1}</td>
+<td>${players}</td>
+</tr>`;
+
+});
+
+html+="</table>";
+
+container.innerHTML = html;
+
+}
+
+function renderStandings(tournament){
+
+const container = document.getElementById("standings");
+
+const players = [...tournament.players];
+
+players.sort((a,b)=>b.matchPoints-a.matchPoints);
+
+let html="<table>";
+html+="<tr><th>Rank</th><th>Name</th><th>Match Points</th></tr>";
+
+players.forEach((p,i)=>{
+html+=`<tr>
+<td>${i+1}</td>
+<td>${p.name}</td>
+<td>${p.matchPoints}</td>
+</tr>`;
+});
+
+html+="</table>";
+
+container.innerHTML=html;
+
+}
+
+loadTournament();
+
+setInterval(loadTournament,3000);
+
+</script>
+
+</body>
+</html>
