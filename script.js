@@ -1113,7 +1113,27 @@ function printFinalStandings() {
 
 function generatePlayerPortal(){
 
-const portalURL = window.location.origin + window.location.pathname.replace("index.html","") + "player-portal.html";
+if(tournament.currentRound === 0){
+  alert("Start the tournament first.");
+  return;
+}
+
+const round = tournament.rounds[tournament.currentRound - 1];
+
+const data = {
+  tournament: tournament.name,
+  round: round.number,
+  pods: round.pods.map(pod =>
+    pod.players.map(id => findPlayer(id).name)
+  )
+};
+
+const encoded = encodeURIComponent(JSON.stringify(data));
+
+const portalURL =
+window.location.origin +
+window.location.pathname +
+"?pairings=" + encoded;
 
 const qrWindow = window.open("", "_blank");
 
@@ -1126,13 +1146,15 @@ qrWindow.document.write(`
 
 <body style="font-family:Arial;text-align:center;padding:40px">
 
-<h1>Player Portal</h1>
+<h1>${tournament.name}</h1>
 
-<p>Scan once to follow the entire tournament</p>
+<h2>Player Portal</h2>
+
+<p>Scan to view current pairings</p>
 
 <canvas id="qr"></canvas>
 
-<p>${portalURL}</p>
+<p style="margin-top:20px">${portalURL}</p>
 
 <script>
 QRCode.toCanvas(
