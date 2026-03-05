@@ -51,11 +51,12 @@
         <div id="roundControls" class="round-controls"></div>
         <div id="fastResultControls" class="fast-result-controls">
             <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
-            <input
-                id="tournamentFastCode"
-                type="text"
-                placeholder="Round+Pod+P1P2P3P4 (separate multiple with spaces or commas)"
-                onkeydown="if(event.key === 'Enter') { event.preventDefault(); applyTournamentFastCodes(); }"
+<input
+id="tournamentFastCode"
+type="text"
+placeholder="Round+Pod+P1P2P3P4"
+onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFastCodes();}"
+>
             >
             <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
         </div>
