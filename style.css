@@ -247,3 +247,21 @@ h2 {
   padding-left: 10px;
 }
 
+.round-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.round-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.round-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
