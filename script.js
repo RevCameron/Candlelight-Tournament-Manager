@@ -544,6 +544,7 @@ function applyTournamentFastCodes() {
   }
 
   input.value = "";
+  document.getElementById("tournamentFastCode").value = "";
 }
 
 function applyPodRankingResult(roundNumber, podIndex, rankings) {
