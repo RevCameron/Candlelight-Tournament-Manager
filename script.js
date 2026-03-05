@@ -1324,3 +1324,15 @@ if (fastCodeInput) {
   });
 }
 });
+function openMainTab(tabId) {
+
+document.querySelectorAll(".main-tab")
+.forEach(t => t.style.display = "none");
+
+document.querySelectorAll(".main-tabs button")
+.forEach(b => b.classList.remove("active-tab"));
+
+document.getElementById(tabId).style.display = "block";
+
+event.target.classList.add("active-tab");
+}
