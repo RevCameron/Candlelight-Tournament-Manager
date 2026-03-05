@@ -286,19 +286,36 @@ function renderRoundTabs() {
 }
 const urlParams = new URLSearchParams(window.location.search);
 
-if (urlParams.has("pairings")) {
+const params = new URLSearchParams(window.location.search);
 
-  const data = JSON.parse(decodeURIComponent(urlParams.get("pairings")));
+if(params.has("portal")){
 
-  document.body.innerHTML = `
-    <h1>${data.tournament}</h1>
-    <h2>Round ${data.round} Pairings</h2>
-    ${data.pods.map((pod, i) => `
-      <p><strong>Pod ${i + 1}</strong>: ${pod.join(", ")}</p>
-    `).join("")}
-  `;
-
+if(!tournament || tournament.currentRound === 0){
+document.body.innerHTML = "<h2>Tournament has not started yet.</h2>";
 }
+else{
+
+const round = tournament.rounds[tournament.currentRound-1];
+
+document.body.innerHTML = `
+<h1>${tournament.name}</h1>
+<h2>Round ${round.number} Pairings</h2>
+
+${round.pods.map((pod,i)=>{
+
+const names = pod.players.map(id=>{
+const p = tournament.players.find(pl=>pl.id===id);
+return p ? p.name : "";
+});
+
+return `<p><strong>Pod ${i+1}</strong>: ${names.join(", ")}</p>`;
+
+}).join("")}
+
+<p style="margin-top:30px;font-size:12px">Refresh page for updates</p>
+`;
+}
+
 function openRound(roundNumber) {
   tournament.viewingRound = roundNumber;
   renderRoundTabs();
@@ -1113,27 +1130,10 @@ function printFinalStandings() {
 
 function generatePlayerPortal(){
 
-if(tournament.currentRound === 0){
-  alert("Start the tournament first.");
-  return;
-}
-
-const round = tournament.rounds[tournament.currentRound - 1];
-
-const data = {
-  tournament: tournament.name,
-  round: round.number,
-  pods: round.pods.map(pod =>
-    pod.players.map(id => findPlayer(id).name)
-  )
-};
-
-const encoded = encodeURIComponent(JSON.stringify(data));
-
 const portalURL =
 window.location.origin +
 window.location.pathname +
-"?pairings=" + encoded;
+"?portal=1";
 
 const qrWindow = window.open("", "_blank");
 
@@ -1150,7 +1150,7 @@ qrWindow.document.write(`
 
 <h2>Player Portal</h2>
 
-<p>Scan to view current pairings</p>
+<p>Scan once — refresh each round</p>
 
 <canvas id="qr"></canvas>
 
@@ -1169,6 +1169,7 @@ document.getElementById('qr'),
 `);
 
 qrWindow.document.close();
+}
 
 }
 
