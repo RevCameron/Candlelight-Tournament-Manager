@@ -64,7 +64,35 @@ onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFas
             <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
         </div>
 
-        <div id="pairings"></div>
+<div class="round-layout">
+
+<div class="round-left">
+<div id="pairings"></div>
+</div>
+
+<div class="round-right">
+
+<div id="roundControls"></div>
+
+<div id="fastResultControls" class="fast-result-controls">
+<label for="tournamentFastCode">
+<strong>Tournament Fast Result Codes</strong>
+</label>
+
+<input
+id="tournamentFastCode"
+type="text"
+placeholder="Round+Pod+P1P2P3P4"
+onkeypress="if(event.key==='Enter'){event.preventDefault();applyTournamentFastCodes();}"
+>
+
+<button onclick="applyTournamentFastCodes()">Apply</button>
+
+</div>
+
+</div>
+
+</div>
 
         <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
         <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
