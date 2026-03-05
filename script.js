@@ -1075,9 +1075,6 @@ function buildSlipHTML(pod, podIndex, round) {
   `;
 }
 
-    </div>
-  `;
-}
 
 function printFinalStandings() {
   recalculateStandings();
