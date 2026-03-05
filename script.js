@@ -1328,17 +1328,21 @@ if (fastCodeInput) {
   });
 }
 });
-function openMainTab(tabId) {
+function openMainTab(tabId){
 
 document.querySelectorAll(".main-tab")
-.forEach(t => t.style.display = "none");
+.forEach(t=>t.style.display="none");
 
 document.querySelectorAll(".main-tabs button")
-.forEach(b => b.classList.remove("active-tab"));
+.forEach(b=>b.classList.remove("active-tab"));
 
-document.getElementById(tabId).style.display = "block";
+document.getElementById(tabId).style.display="block";
 
-event.target.classList.add("active-tab");
+const btn=[...document.querySelectorAll(".main-tabs button")]
+.find(b=>b.getAttribute("onclick").includes(tabId));
+
+if(btn) btn.classList.add("active-tab");
+
 }
 
 function handlePrintMenu(){
@@ -1362,3 +1366,4 @@ if(confirm("Print pairings and match slips?")){
 printRoundPairings(roundNumber);
 printRoundMatchSlips(roundNumber);
 }
+
