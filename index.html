@@ -65,34 +65,6 @@ onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFas
             <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
         </div>
 
-<div class="round-layout">
-
-<div class="round-left">
-<div id="pairings"></div>
-</div>
-
-<div class="round-right">
-
-<div id="roundControls"></div>
-
-<div id="fastResultControls" class="fast-result-controls">
-<label for="tournamentFastCode">
-<strong>Tournament Fast Result Codes</strong>
-</label>
-
-<input
-id="tournamentFastCode"
-type="text"
-placeholder="Round+Pod+P1P2P3P4"
-onkeypress="if(event.key==='Enter'){event.preventDefault();applyTournamentFastCodes();}"
->
-
-<button onclick="applyTournamentFastCodes()">Apply</button>
-
-</div>
-
-</div>
-
 </div>
 
         <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
@@ -129,38 +101,39 @@ Standings
 
 <div id="playersTab" class="main-tab" style="display:none;">
 <h2>Player Management</h2>
-<table id="playerManagementTable"></table>
-</div>
 
+<table id="playerManagementTable">
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
 
 <div id="standingsTab" class="main-tab" style="display:none;">
 <h2>Standings</h2>
-<table id="standingsTable"></table>
-</div>
 
-        <h2>Player Management</h2>
-        <p class="muted-text">Edit names or mark players as dropped/eliminated between rounds.</p>
-        <table id="playerManagementTable" border="1">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+<table id="standingsTable">
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Match Points</th>
+<th>OMW%</th>
+<th id="gwpHeader">GW%</th>
+<th>OGW%</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
 
     <script src="script.js"></script>
 </body>
 </html>
-
-<select id="printMenu" onchange="handlePrintMenu()">
-<option value="">Print...</option>
-<option value="pairings">Round Pairings</option>
-<option value="slips">Match Slips</option>
-<option value="standings">Standings</option>
-<option value="roster">Roster</option>
-</select>
-
