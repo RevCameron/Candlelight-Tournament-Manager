@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <div class="app-header">
-  <img src="Logo.png" class="logo">
-  <h1>Candlelight Tournament Manager</h1>
-</div>
+    <meta charset="UTF-8">
+    <title>Candlelight Tournament Manager</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
   <img src="Logo.png" class="logo">
   <h1>Candlelight Tournament Manager</h1>
 </header>
-    <div id="setup">
+    <div id="setup"class="panel">
         <h2>Create Event</h2>
 
         <label for="gameMode">Game Mode:</label>
@@ -31,7 +30,7 @@
         <button onclick="createTournament()">Start Event</button>
     </div>
 
-    <div id="registration" style="display:none;">
+    <div id="registration" class="panel" style="display:none;">
         <h2>Player Registration</h2>
 
         <input
@@ -49,7 +48,7 @@
         <button onclick="startRounds()">Start Tournament</button>
     </div>
 
-    <div id="tournament" style="display:none;">
+    <div id="tournament" class="panel" style="display:none;">
         <h2 id="roundHeader"></h2>
 
         <div id="roundTabs" class="round-tabs"></div>
@@ -62,7 +61,6 @@ type="text"
 placeholder="Round+Pod+P1P2P3P4"
 onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFastCodes();}"
 >
-            >
             <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
         </div>
 
