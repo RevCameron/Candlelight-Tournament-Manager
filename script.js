@@ -1356,14 +1356,3 @@ if(option==="roster") printRoster();
 
 document.getElementById("printMenu").value="";
 }
-
-setTimeout(()=>{
-printRoundPairings(tournament.currentRound);
-printRoundMatchSlips(tournament.currentRound);
-},300);
-
-if(confirm("Print pairings and match slips?")){
-printRoundPairings(roundNumber);
-printRoundMatchSlips(roundNumber);
-}
-
