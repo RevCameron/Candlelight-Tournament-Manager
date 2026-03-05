@@ -157,6 +157,10 @@ function nextRound() {
   renderRoundView(tournament.viewingRound);
   updateStandings();
   renderPlayerManagement();
+  setTimeout(()=>{
+printRoundPairings(tournament.currentRound);
+printRoundMatchSlips(tournament.currentRound);
+},300);
 }
 
 function shuffleArray(items) {
@@ -1336,3 +1340,21 @@ document.getElementById(tabId).style.display = "block";
 
 event.target.classList.add("active-tab");
 }
+
+function handlePrintMenu(){
+
+const option = document.getElementById("printMenu").value;
+
+if(option==="pairings") printRoundPairings(tournament.currentRound);
+if(option==="slips") printRoundMatchSlips(tournament.currentRound);
+if(option==="standings") printFinalStandings();
+if(option==="roster") printRoster();
+
+document.getElementById("printMenu").value="";
+}
+
+setTimeout(()=>{
+printRoundPairings(tournament.currentRound);
+printRoundMatchSlips(tournament.currentRound);
+},300);
+
