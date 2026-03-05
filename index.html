@@ -67,7 +67,10 @@ onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFas
 
 </div>
 
-        <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
+<button id="nextRoundButton" onclick="nextRound()" disabled>
+Generate Next Round
+</button>
+
 <select id="printMenu" onchange="handlePrintMenu()">
 <option value="">Print...</option>
 <option value="pairings">Round Pairings</option>
@@ -75,6 +78,7 @@ onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFas
 <option value="standings">Standings</option>
 <option value="roster">Roster</option>
 </select>
+    
 <button onclick="saveTournament()">Save Tournament</button>
 
 <div class="main-tabs">
