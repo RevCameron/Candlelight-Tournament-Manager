@@ -26,11 +26,6 @@ tournament = {
   players: [],
   rounds: [],
   nextPlayerId: 1
-  <button id="nextRoundButton" onclick="nextRound()" disabled>
-Generate Next Round
-</button>
-
-<select id="printMenu" onchange="handlePrintMenu()">
 };
 
   document.getElementById("setup").style.display = "none";
