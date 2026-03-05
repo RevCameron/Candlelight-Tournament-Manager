@@ -26,6 +26,11 @@ tournament = {
   players: [],
   rounds: [],
   nextPlayerId: 1
+  <button id="nextRoundButton" onclick="nextRound()" disabled>
+Generate Next Round
+</button>
+
+<select id="printMenu" onchange="handlePrintMenu()">
 };
 
   document.getElementById("setup").style.display = "none";
@@ -123,6 +128,7 @@ function startRounds() {
   document.getElementById("registration").style.display = "none";
   document.getElementById("tournament").style.display = "block";
   nextRound();
+  document.getElementById("printMenu").style.display = "inline-block";
 }
 
 function nextRound() {
