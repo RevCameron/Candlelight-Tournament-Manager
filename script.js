@@ -1132,6 +1132,22 @@ function printFinalStandings() {
 
   openPrintWindow("Final Standings", html);
 }
+function importJSON(content) { 
+  try { 
+    const data = JSON.parse(content); 
+    
+    const players = data 
+      .filter(p => p.StatusDescription && 
+        p.StatusDescription.includes("Enrolled")) 
+      .map(p => p.PlayerName); 
+    
+    loadPlayersIntoTournament(players); 
+  
+  } catch (err) { 
+    alert("Invalid JSON file."); 
+    console.error(err); 
+  } 
+}
 
 function importCSV(content) {
 const lines = content.trim().split(/\r?\n/);
