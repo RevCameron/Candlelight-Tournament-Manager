@@ -286,9 +286,48 @@ function renderRoundTabs() {
 }
 const urlParams = new URLSearchParams(window.location.search);
 
-const params = new URLSearchParams(window.location.search);
+function generatePlayerPortal(){
 
-if(params.has("portal")){
+const portalURL =
+window.location.origin +
+window.location.pathname +
+"?portal=1";
+
+const qrWindow = window.open("", "_blank");
+
+qrWindow.document.write(`
+<html>
+<head>
+<title>Player Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+</head>
+
+<body style="font-family:Arial;text-align:center;padding:40px">
+
+<h1>${tournament.name}</h1>
+
+<h2>Player Portal</h2>
+
+<p>Scan once — refresh each round</p>
+
+<canvas id="qr"></canvas>
+
+<p style="margin-top:20px">${portalURL}</p>
+
+<script>
+QRCode.toCanvas(
+document.getElementById('qr'),
+"${portalURL}",
+{width:300}
+);
+</script>
+
+</body>
+</html>
+`);
+
+qrWindow.document.close();
+}
 
 if(!tournament || tournament.currentRound === 0){
 document.body.innerHTML = "<h2>Tournament has not started yet.</h2>";
@@ -315,7 +354,7 @@ return `<p><strong>Pod ${i+1}</strong>: ${names.join(", ")}</p>`;
 <p style="margin-top:30px;font-size:12px">Refresh page for updates</p>
 `;
 }
-
+}
 function openRound(roundNumber) {
   tournament.viewingRound = roundNumber;
   renderRoundTabs();
@@ -1171,8 +1210,6 @@ document.getElementById('qr'),
 qrWindow.document.close();
 }
 
-}
-
 function importJSON(content) {
     try {
         const data = JSON.parse(content);
@@ -1355,7 +1392,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printFinalStandings = printFinalStandings;
   window.generatePlayerPortal = generatePlayerPortal;
   const fastCodeInput = document.getElementById("tournamentFastCode");
-
+renderPortalView();
 if (fastCodeInput) {
   fastCodeInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
