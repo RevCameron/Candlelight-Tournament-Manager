@@ -889,7 +889,55 @@ function printRoundPairings(roundNumber) {
       });
     });
   });
+function printRoster() {
+  // Check if there are players to print
+  if (!tournament || tournament.players.length === 0) {
+    alert("No players are registered yet!");
+    return;
+  }
 
+  // Sort players alphabetically by name
+  const sortedPlayers = [...tournament.players].sort((a, b) => a.name.localeCompare(b.name));
+
+  const html = `
+    <html><head><title>Tournament Roster</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      h2 { text-align: center; }
+      table { border-collapse: collapse; width: 100%; max-width: 800px; margin: 0 auto; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      th { background-color: #f4f4f4; }
+      .status-active { color: #2f6f2f; font-weight: bold; }
+      .status-dropped { color: #a30000; }
+    </style>
+    </head><body>
+    <h2>${tournament.name || "Tournament"} - Player Roster</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player Name</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortedPlayers.map((player, index) => {
+          const statusClass = player.status === "active" ? "status-active" : "status-dropped";
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${player.name}</td>
+              <td class="${statusClass}">${getStatusLabel(player.status)}</td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+    </body></html>
+  `;
+
+  openPrintWindow("Tournament Roster", html);
+}
   pairings.sort((a, b) => a.firstName.localeCompare(b.firstName) || a.name.localeCompare(b.name));
 
   const html = `
