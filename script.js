@@ -33,39 +33,13 @@ function createTournament() {
 
   document.getElementById("setup").style.display = "none";
   document.getElementById("registration").style.display = "block";
-  document.getElementById("gwpHeader").textContent =
-    tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%";
   
-  renderPlayerList();
-}
-
-function addPlayer() {
-  const input = document.getElementById("playerName");
-  const name = input.value.trim();
-  if (!name) return;
-
-  const duplicate = tournament.players.some(
-    player => player.name.toLowerCase() === name.toLowerCase()
-  );
-  if (duplicate) {
-    alert("Player already added.");
-    return;
+  // FIX: Check if gwpHeader exists before setting textContent
+  const gwpHeader = document.getElementById("gwpHeader");
+  if (gwpHeader) {
+    gwpHeader.textContent = tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%";
   }
-
-  tournament.players.push({
-    id: tournament.nextPlayerId,
-    name,
-    status: "active",
-    matchPoints: 0,
-    matchesPlayed: 0,
-    gameWins: 0,
-    gameLosses: 0,
-    gameDraws: 0,
-    opponents: []
-  });
-
-  tournament.nextPlayerId += 1;
-  input.value = "";
+  
   renderPlayerList();
 }
 
@@ -123,12 +97,11 @@ function renderPlayerList() {
 function editRegisteredPlayer(playerId) {
   const player = findPlayer(playerId);
   if (!player) return;
-
   const updatedName = prompt("Edit player name:", player.name);
-  if (!updatedName || !updatedName.trim()) return;
-
-  player.name = updatedName.trim();
-  renderPlayerList();
+  if (updatedName && updatedName.trim()) {
+    player.name = updatedName.trim();
+    renderPlayerList();
+  }
 }
 
 function deleteRegisteredPlayer(playerId) {
@@ -139,8 +112,7 @@ function deleteRegisteredPlayer(playerId) {
 /* --- TOURNAMENT CONTROL --- */
 
 function confirmStartTournament() {
-  const activeCount = tournament.players.filter(p => p.status === "active").length;
-  if (activeCount < 3) {
+  if (tournament.players.length < 3) {
     alert("At least 3 players are required to start.");
     return;
   }
@@ -193,7 +165,7 @@ function nextRound() {
   }, 300);
 }
 
-/* --- ROUND VIEW & DYNAMICS --- */
+/* --- ROUND VIEW --- */
 
 function renderRoundTabs() {
   const tabs = document.getElementById("roundTabs");
@@ -215,8 +187,11 @@ function renderRoundView(roundNumber) {
   const round = tournament.rounds[roundNumber - 1];
   if (!round) return;
 
-  document.getElementById("roundHeader").textContent = `Round ${round.number}`;
+  const header = document.getElementById("roundHeader");
+  if (header) header.textContent = `Round ${round.number}`;
+  
   const pairingsSection = document.getElementById("pairings");
+  if (!pairingsSection) return;
   pairingsSection.innerHTML = "";
 
   round.pods.forEach((pod, podIndex) => {
@@ -248,10 +223,9 @@ function renderRoundView(roundNumber) {
         <p class="pod-status">${pod.locked ? describePodResult(pod, playerObjects) : "Pending"}</p>
       </div>`;
     
-    // Restore values if already submitted
     playerObjects.forEach(p => {
       const select = document.getElementById(`rank-${round.number}-${podIndex}-${p.id}`);
-      if (pod.result?.type === "ranking") select.value = pod.result.rankings[p.id];
+      if (select && pod.result?.type === "ranking") select.value = pod.result.rankings[p.id];
     });
   });
 
@@ -268,13 +242,8 @@ function updateNextRoundButtonState() {
   if (isComplete) {
     button.style.display = "inline-block";
     button.disabled = false;
-    if (isLastRound) {
-      button.textContent = "Save and Print Standings";
-      button.onclick = finishTournament;
-    } else {
-      button.textContent = "Generate Next Round";
-      button.onclick = nextRound;
-    }
+    button.textContent = isLastRound ? "Save and Print Standings" : "Generate Next Round";
+    button.onclick = isLastRound ? finishTournament : nextRound;
   } else {
     button.style.display = "none";
   }
@@ -333,7 +302,7 @@ function updateStandings() {
   updateNextRoundButtonState();
 }
 
-/* --- POD BUILDING & LOGIC --- */
+/* --- LOGIC --- */
 
 function buildPods() {
   let activePlayers = tournament.players.filter(p => p.status === "active");
@@ -344,7 +313,7 @@ function buildPods() {
   }
 
   const podSizes = getPodSizes(activePlayers.length);
-  if (!podSizes) { alert("Invalid player count for pods."); return []; }
+  if (!podSizes) { alert("Invalid player count."); return []; }
 
   const pods = [];
   let cursor = 0;
@@ -393,7 +362,12 @@ function editPodResult(r, i) {
   renderRoundView(tournament.viewingRound);
 }
 
-/* --- DATA & PRINTING --- */
+function describePodResult(pod, players) {
+  if (pod.result.type === "draw") return "Result: Draw (Tie)";
+  return "Result Submitted";
+}
+
+/* --- FILE HANDLING --- */
 
 function importTournamentSave() {
   const fileInput = document.getElementById("saveFile");
@@ -401,7 +375,9 @@ function importTournamentSave() {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      tournament = JSON.parse(e.target.result);
+      const loaded = JSON.parse(e.target.result);
+      if (!loaded.players || !loaded.rounds) throw new Error();
+      tournament = loaded;
       if (tournament.currentRound > 0) {
         document.getElementById("setup").style.display = "none";
         document.getElementById("registration").style.display = "none";
@@ -412,7 +388,7 @@ function importTournamentSave() {
         updateStandings();
         renderPlayerManagement();
       } else { renderPlayerList(); }
-    } catch (err) { alert("Invalid save file."); }
+    } catch (err) { alert("Invalid save file format."); }
   };
   reader.readAsText(fileInput.files[0]);
 }
@@ -427,13 +403,43 @@ function saveTournament() {
   a.click();
 }
 
-function printRoster() {
-  const sorted = [...tournament.players].sort((a,b) => a.name.localeCompare(b.name));
-  const html = `<h2>${tournament.name} Roster</h2><table border="1" style="width:100%; border-collapse:collapse;">
-    <tr><th>#</th><th>Name</th><th>Status</th></tr>
-    ${sorted.map((p, i) => `<tr><td>${i+1}</td><td>${p.name}</td><td>${getStatusLabel(p.status)}</td></tr>`).join("")}
-  </table>`;
-  openPrintWindow("Roster", html);
+/* --- PRINTING --- */
+
+function printRoundMatchSlips(num) {
+  const round = tournament.rounds[num-1];
+  if (!round) return;
+  
+  let slips = round.pods.map((pod, i) => {
+    const players = pod.players.map(id => findPlayer(id));
+    return `
+    <div style="height:45vh; border-bottom:2px dashed #000; padding:20px; page-break-inside: avoid;">
+      <div style="text-align:center;">
+        <h3 style="margin:0;">${tournament.name}</h3>
+        <p style="margin:5px 0;">Round ${num} — Pod ${i+1}</p>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:10px;">
+        ${players.map(p => `
+          <div style="border:1.5px solid #000; padding:10px; min-height:110px; position:relative;">
+            <strong>${p.name}</strong>
+            <div style="margin-top:15px; display:flex; gap:10px; align-items:center;">
+               Rank: 
+               <div style="border:1px solid #000; width:22px; height:22px; text-align:center;">1</div>
+               <div style="border:1px solid #000; width:22px; height:22px; text-align:center;">2</div>
+               <div style="border:1px solid #000; width:22px; height:22px; text-align:center;">3</div>
+               ${players.length > 3 ? '<div style="border:1px solid #000; width:22px; height:22px; text-align:center;">4</div>' : ''}
+               <div style="margin-left:auto; display:flex; align-items:center; gap:5px;">
+                 Tie: <div style="border:1px solid #000; width:20px; height:20px;"></div>
+               </div>
+            </div>
+            <div style="margin-top:25px; font-size:11px; border-top:1px solid #ccc; padding-top:5px;">
+              Signature: ___________________________
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+  
+  openPrintWindow("Match Slips", `<html><body style="font-family:sans-serif;">${slips}</body></html>`);
 }
 
 function printRoundPairings(num) {
@@ -448,27 +454,20 @@ function printRoundPairings(num) {
     });
   });
   list.sort((a,b) => a.name.localeCompare(b.name));
-  const html = `<h2>Round ${num} Pairings</h2><table border="1" style="width:100%; border-collapse:collapse;">
+  const html = `<h2>Round ${num} Pairings</h2><table border="1" style="width:100%; border-collapse:collapse; text-align:left;">
     <tr><th>Player</th><th>Pod</th><th>Opponents</th></tr>
-    ${list.map(e => `<tr><td>${e.name}</td><td>${e.pod}</td><td>${e.opps}</td></tr>`).join("")}
+    ${list.map(e => `<tr><td style="padding:5px;">${e.name}</td><td style="padding:5px;">${e.pod}</td><td style="padding:5px;">${e.opps}</td></tr>`).join("")}
   </table>`;
   openPrintWindow("Pairings", html);
 }
 
-function printRoundMatchSlips(num) {
-  const round = tournament.rounds[num-1];
-  if (!round) return;
-  let slips = round.pods.map((pod, i) => `
-    <div style="height:45vh; border-bottom:2px dashed #000; padding:20px;">
-      <center><h3>${tournament.name} - Round ${num} - Pod ${i+1}</h3></center>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-        ${pod.players.map(id => `
-          <div style="border:1px solid #000; padding:10px; min-height:100px;">
-            <strong>${findPlayer(id).name}</strong><br><br>Rank: [ 1 ] [ 2 ] [ 3 ] [ 4 ]<br><br>Sign: _________
-          </div>`).join("")}
-      </div>
-    </div>`).join("");
-  openPrintWindow("Slips", `<html><body>${slips}</body></html>`);
+function printRoster() {
+  const sorted = [...tournament.players].sort((a,b) => a.name.localeCompare(b.name));
+  const html = `<h2>Roster</h2><table border="1" style="width:100%; border-collapse:collapse;">
+    <tr><th>#</th><th>Name</th><th>Status</th></tr>
+    ${sorted.map((p, i) => `<tr><td>${i+1}</td><td>${p.name}</td><td>${getStatusLabel(p.status)}</td></tr>`).join("")}
+  </table>`;
+  openPrintWindow("Roster", html);
 }
 
 function printFinalStandings() {
@@ -489,14 +488,16 @@ function applyTournamentFastCodes() {
   const entries = raw.split(/[\s,;]+/).filter(Boolean);
   entries.forEach(entry => {
     const digits = entry.replace(/\D/g, "");
-    if (digits.length < 5) return;
+    if (digits.length < 4) return;
     const rNum = parseInt(digits[0], 10);
     const pIdx = parseInt(digits[1], 10) - 1;
     const placements = digits.slice(2);
     const pod = getPod(rNum, pIdx);
     if (!pod || pod.locked) return;
-    if (placements === "0000") { reportPodDraw(rNum, pIdx); }
-    else {
+    if (placements.startsWith("00")) { 
+       pod.result = { type: "draw" };
+       pod.locked = true;
+    } else {
       const rankings = {};
       pod.players.forEach((id, i) => { rankings[id] = parseInt(placements[i], 10); });
       pod.result = { type: "ranking", rankings };
@@ -517,7 +518,6 @@ function isRoundComplete(r) { return tournament.rounds[r-1]?.pods.every(p => p.l
 function getStatusLabel(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function formatPercent(v) { return (v * 100).toFixed(1) + "%"; }
 function shuffleArray(arr) { return arr.sort(() => Math.random() - 0.5); }
-
 function calculateGwp(p) {
   const t = p.gameWins + p.gameLosses + p.gameDraws;
   return t === 0 ? 0 : (p.gameWins + 0.5 * p.gameDraws) / t;
@@ -571,6 +571,8 @@ function openMainTab(tabId) {
   document.querySelectorAll(".main-tab").forEach(t => t.style.display = "none");
   document.querySelectorAll(".main-tabs button").forEach(b => b.classList.remove("active-tab"));
   document.getElementById(tabId).style.display = "block";
+  const btn = Array.from(document.querySelectorAll(".main-tabs button")).find(b => b.getAttribute("onclick").includes(tabId));
+  if (btn) btn.classList.add("active-tab");
 }
 
 function handlePrintMenu() {
@@ -582,10 +584,9 @@ function handlePrintMenu() {
   document.getElementById("printMenu").value = "";
 }
 
-/* --- INITIALIZATION --- */
+/* --- INIT --- */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Bind all functions to window
   Object.assign(window, {
     createTournament, addPlayer, importMeleeRoster, editRegisteredPlayer, deleteRegisteredPlayer,
     confirmStartTournament, nextRound, openRound, reportPodRanking, reportPodDraw, editPodResult,
