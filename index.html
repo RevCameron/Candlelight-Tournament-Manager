@@ -40,45 +40,36 @@
             type="text"
             id="playerName"
             placeholder="Enter player name"
-            onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayer(); }"
+            onkeydown="if(event.key === 'Enter') addPlayer()"
         >
-        <input type="file" id="rosterFile" accept=".json,.csv">
-        <button onclick="importRoster()">Import Melee Roster</button>
-        <button type="button" onclick="addPlayer()">Add Player</button>
-
-        <ul id="playerList"></ul>
-
-        <button onclick="startRounds()">Start Tournament</button>
+        <button onclick="addPlayer()">Add Player</button>
+        <button onclick="importMeleeRoster()">Import Melee Roster</button>
+        <div id="playerList"></div>
+        <div style="margin-top:20px;">
+            <button id="printRosterBtn" onclick="printRoster()">Print Roster</button>
+            <button id="startTournamentBtn" onclick="confirmStartTournament()" style="display:none; background-color: #28a745;">Start Tournament</button>
+        </div>
     </div>
 
-    <div id="tournament" class="panel" style="display:none;">
-        
-        <div id="fastResultControls" class="fast-result-controls">
-            <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
-            <input
-                id="tournamentFastCode"
-                type="text"
-                placeholder="Round+Pod+P1P2P3P4"
-                onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFastCodes();}"
-            >
-            <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
-            <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
-            <select id="printMenu" onchange="handlePrintMenu()">
-                <option value="">Print...</option>
-                <option value="pairings">Round Pairings</option>
-                <option value="slips">Match Slips</option>
-                <option value="standings">Standings</option>
-                <option value="roster">Roster</option>
-            </select>
-            <button onclick="saveTournament()">Save Tournament</button>
+    <div id="tournamentPortal" class="panel" style="display:none;">
+        <div class="portal-header">
+            <h2 id="portalTournamentName"></h2>
+            <div class="portal-actions">
+                <select id="printMenu" onchange="handlePrintMenu()">
+                    <option value="">Print...</option>
+                    <option value="roster">Roster</option>
+                    <option value="pairings">Current Pairings</option>
+                    <option value="slips">Current Match Slips</option>
+                    <option value="standings">Standings</option>
+                </select>
+                <button onclick="saveTournament()">Save Tournament</button>
+                <input type="text" id="tournamentFastCode" placeholder="Enter Fast Code..." style="width:150px;">
+                <button onclick="applyTournamentFastCodes()">Apply</button>
+            </div>
         </div>
 
         <div class="main-tabs">
-            <button class="tab-button active-tab" onclick="openMainTab('roundTab')">Round</button>
+            <button class="tab-button active-tab" onclick="openMainTab('roundTab')">Rounds</button>
             <button class="tab-button" onclick="openMainTab('playersTab')">Player Management</button>
             <button class="tab-button" onclick="openMainTab('standingsTab')">Standings</button>
         </div>
