@@ -30,7 +30,6 @@ tournament = {
 
   document.getElementById("setup").style.display = "none";
   document.getElementById("registration").style.display = "block";
-  document.getElementById("gwpHeader").textContent =
     tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%";
 }
 
@@ -863,4 +862,224 @@ function handlePrintMenu(){
   if(option==="standings") printFinalStandings();
   if(option==="roster") printRoster();
   document.getElementById("printMenu").value="";
+}
+function importJSON(content) { 
+  try { 
+    const data = JSON.parse(content); 
+    
+    const players = data 
+      .filter(p => p.StatusDescription && 
+        p.StatusDescription.includes("Enrolled")) 
+      .map(p => p.PlayerName); 
+    
+    loadPlayersIntoTournament(players); 
+  
+  } catch (err) { 
+    alert("Invalid JSON file."); 
+    console.error(err); 
+  } 
+}
+
+function importCSV(content) {
+const lines = content.trim().split(/\r?\n/);
+    const headers = lines[0].split(",");
+
+    const nameIndex = headers.findIndex(h => h.includes("PlayerName"));
+
+    if (nameIndex === -1) {
+        alert("Could not find PlayerName column.");
+        return;
+    }
+
+    const players = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",");
+        if (cols[nameIndex]) {
+            players.push(cols[nameIndex].replace(/"/g, "").trim());
+        }
+    }
+
+    loadPlayersIntoTournament(players);
+}
+
+function loadPlayersIntoTournament(playerNames) {
+
+    if (tournament.players.length > 0) {
+        const confirmReplace = confirm("Replace existing player list?");
+        if (!confirmReplace) return;
+    }
+
+    tournament.players = [];
+    tournament.nextPlayerId = 1;
+
+    playerNames.forEach(name => {
+
+        const trimmed = name.trim();
+        if (!trimmed) return;
+
+        tournament.players.push({
+            id: tournament.nextPlayerId,
+            name: trimmed,
+            status: "active",
+            matchPoints: 0,
+            matchesPlayed: 0,
+            gameWins: 0,
+            gameLosses: 0,
+            gameDraws: 0,
+            opponents: []
+        });
+
+        tournament.nextPlayerId += 1;
+    });
+
+    renderPlayerList();
+}
+
+function importRoster() {
+
+    if (tournament.currentRound > 0) {
+        alert("Cannot import roster after rounds have started.");
+        return;
+    }
+
+    const fileInput = document.getElementById("rosterFile");
+    if (!fileInput || !fileInput.files.length) {
+        alert("Please select a file.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const content = e.target.result;
+
+        if (file.name.toLowerCase().endsWith(".json")) {
+            importJSON(content);
+        } else if (file.name.toLowerCase().endsWith(".csv")) {
+            importCSV(content);
+        } else {
+            alert("Unsupported file type.");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+function saveTournament() {
+
+  const data = JSON.stringify(tournament);
+  const blob = new Blob([data], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "tournament-save.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function loadTournament(fileContent) {
+
+  try {
+
+    const data = JSON.parse(fileContent);
+
+    tournament = data;
+
+    renderPlayerList();
+
+    if (tournament.currentRound > 0) {
+
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("registration").style.display = "none";
+      document.getElementById("tournament").style.display = "block";
+
+      renderRoundTabs();
+      renderRoundView(tournament.viewingRound);
+      updateStandings();
+      renderPlayerManagement();
+    }
+
+  } catch (err) {
+    alert("Invalid tournament save file.");
+  }
+}
+
+function importTournamentSave() {
+
+  const fileInput = document.getElementById("saveFile");
+
+  if (!fileInput.files.length) {
+    alert("Select a save file.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    loadTournament(e.target.result);
+  };
+
+  reader.readAsText(fileInput.files[0]);
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  window.createTournament = createTournament;
+  window.addPlayer = addPlayer;
+  window.editRegisteredPlayer = editRegisteredPlayer;
+  window.deleteRegisteredPlayer = deleteRegisteredPlayer;
+  window.startRounds = startRounds;
+  window.nextRound = nextRound;
+  window.openRound = openRound;
+  window.reportPodRanking = reportPodRanking;
+  window.reportPodDraw = reportPodDraw;
+  window.editPodResult = editPodResult;
+  window.applyTournamentFastCodes = applyTournamentFastCodes;
+  window.editPlayerName = editPlayerName;
+  window.setPlayerStatus = setPlayerStatus;
+  window.printRoundPairings = printRoundPairings;
+  window.printRoundMatchSlips = printRoundMatchSlips;
+  window.printFinalStandings = printFinalStandings;
+  const fastCodeInput = document.getElementById("tournamentFastCode");
+renderPortalView();
+if (fastCodeInput) {
+  fastCodeInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applyTournamentFastCodes();
+    }
+  });
+}
+});
+function openMainTab(tabId){
+
+document.querySelectorAll(".main-tab")
+.forEach(t=>t.style.display="none");
+
+document.querySelectorAll(".main-tabs button")
+.forEach(b=>b.classList.remove("active-tab"));
+
+document.getElementById(tabId).style.display="block";
+
+const btn=[...document.querySelectorAll(".main-tabs button")]
+.find(b=>b.getAttribute("onclick").includes(tabId));
+
+if(btn) btn.classList.add("active-tab");
+
+}
+
+function handlePrintMenu(){
+
+const option = document.getElementById("printMenu").value;
+
+if(option==="pairings") printRoundPairings(tournament.currentRound);
+if(option==="slips") printRoundMatchSlips(tournament.currentRound);
+if(option==="standings") printFinalStandings();
+if(option==="roster") printRoster();
+
+document.getElementById("printMenu").value="";
 }
