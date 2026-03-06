@@ -42,6 +42,7 @@
             placeholder="Enter player name"
             onkeydown="if(event.key === 'Enter') addPlayer()"
         >
+        <input type="file" id="rosterFile" accept=".json,.csv">
         <button onclick="addPlayer()">Add Player</button>
         <button onclick="importMeleeRoster()">Import Melee Roster</button>
         <div id="playerList"></div>
