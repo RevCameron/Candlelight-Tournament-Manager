@@ -317,15 +317,14 @@ function reportPodDraw(podIdx) {
   checkRoundEndAutoSave(); // Requirement: Auto-save check
 }
 
-function editPodResult(podIdx) {
-  const round = tournament.rounds[tournament.viewingRound - 1];
-  if (tournament.viewingRound !== tournament.currentRound) {
-    alert("Can only edit the current round.");
-    return;
-  }
-  round.pods[podIdx].locked = false;
+function editPodResult(roundNumber, podIndex) {
+  const pod = getPod(roundNumber, podIndex);
+  if (!pod || !pod.locked) return;
+
+  pod.locked = false;
   recalculateStandings();
-  renderPortalView();
+  renderRoundView(tournament.viewingRound);
+  updateStandings();
 }
 
 function nextRound() {
@@ -353,34 +352,41 @@ function recalculateStandings() {
     p.opponents = [];
   });
 
-  tournament.rounds.forEach(r => {
-    r.pods.forEach(pod => {
-      if (!pod.locked) return;
-      pod.players.forEach(pid => {
-        const p = findPlayer(pid);
-        p.matchesPlayed++;
-        p.opponents.push(...pod.players.filter(id => id !== pid));
-        
-        if (pod.result.type === "ranking") {
-          const rk = pod.result.rankings[pid];
-          if (rk === 1) {
-            p.matchPoints += 5;
-            p.gameWins++;
-          } else if (rk === 2) {
-            p.matchPoints += 3;
-            p.gameLosses++;
-          } else if (rk === 3) {
-            p.matchPoints += 2;
-            p.gameLosses++;
-          } else if (rk === 4) {
-            p.matchPoints += 1;
-            p.gameLosses++;
+  tournament.rounds.forEach(round => {
+    round.pods.forEach(pod => {
+      if (!pod.locked || !pod.result) return;
+
+      const podPlayers = pod.players.map(id => findPlayer(id));
+      applyOpponentTracking(podPlayers);
+
+      if (pod.result.type === "draw") {
+        podPlayers.forEach(player => {
+          player.matchPoints += 3;
+          player.matchesPlayed += 1;
+          player.gameDraws += 1;
+        });
+        return;
+      }
+
+      if (pod.result.type === "ranking") {
+        const maxRank = podPlayers.length;
+
+        podPlayers.forEach(player => {
+          player.matchesPlayed += 1;
+          const playerRank = pod.result.rankings[player.id];
+
+          if (playerRank === 1) {
+            player.matchPoints += 5;
+            player.gameWins += 1;
+          } else if (playerRank === maxRank) {
+            player.matchPoints += 1;
+            player.gameLosses += 1;
+          } else {
+            player.matchPoints += 3;
+            player.gameDraws += 1;
           }
-        } else {
-          p.matchPoints += 3;
-          p.gameDraws++;
-        }
-      });
+        });
+      }
     });
   });
 }
@@ -474,28 +480,70 @@ function setPlayerStatus(id, val) {
 }
 
 function applyTournamentFastCodes() {
-  const code = document.getElementById("tournamentFastCode").value.trim();
-  if (!code) return;
-  const parts = code.split(" ");
-  const cmd = parts[0].toLowerCase();
+  const input = document.getElementById("tournamentFastCode");
+  if (!input) return;
 
-  if (cmd === "drop" || cmd === "d") {
-    const name = parts.slice(1).join(" ").toLowerCase();
-    const p = tournament.players.find(x => x.name.toLowerCase() === name);
-    if (p) {
-      p.status = "dropped";
-      alert(`${p.name} dropped.`);
+  const raw = input.value.trim();
+  if (!raw) {
+    alert("Enter fast codes first. Example: 231324 or tie code 230000.");
+    return;
+  }
+
+  const entries = raw
+    .split(/[\s,;]+/)
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  if (entries.length === 0) {
+    alert("No valid fast-code entries found.");
+    return;
+  }
+
+  for (const entry of entries) {
+    const digits = entry.replace(/\D/g, "");
+    if (!/^\d{6}$/.test(digits)) {
+      alert(`Invalid code: ${entry}. Use exactly 6 digits (Round, Pod, P1, P2, P3, P4).`);
+      return;
     }
-  } else if (cmd === "undrop" || cmd === "u") {
-    const name = parts.slice(1).join(" ").toLowerCase();
-    const p = tournament.players.find(x => x.name.toLowerCase() === name);
-    if (p) {
-      p.status = "active";
-      alert(`${p.name} returned to active.`);
+
+    const roundNumber = parseInt(digits[0], 10);
+    const podNumber = parseInt(digits[1], 10);
+    const placements = digits.slice(2);
+
+    const round = tournament.rounds[roundNumber - 1];
+    if (!round) {
+      alert(`Round ${roundNumber} does not exist.`);
+      return;
+    }
+
+    if (!podNumber || podNumber < 1 || podNumber > round.pods.length) {
+      alert(`Pod ${podNumber} does not exist in Round ${roundNumber}.`);
+      return;
+    }
+
+    const podIndex = podNumber - 1;
+    const pod = round.pods[podIndex];
+
+    if (pod.locked) {
+      alert(`Round ${roundNumber}, Pod ${podNumber} is already locked. Click Edit Result first if needed.`);
+      return;
+    }
+
+    const parsed = parseFastCodeForPod(pod, placements);
+    if (parsed.error) {
+      alert(`Round ${roundNumber}, Pod ${podNumber}: ${parsed.error}`);
+      return;
+    }
+
+    if (parsed.draw) {
+      reportPodDraw(roundNumber, podIndex);
+    } else {
+      applyPodRankingResult(roundNumber, podIndex, parsed.rankings);
     }
   }
+
+  input.value = "";
   document.getElementById("tournamentFastCode").value = "";
-  renderPortalView();
 }
 
 /* --- PRINTING FUNCTIONS --- */
@@ -517,42 +565,136 @@ function printRoundPairings(num) {
   win.print();
 }
 
-function printRoundMatchSlips(num) {
-  const r = tournament.rounds[num - 1];
-  if (!r) return;
-  let html = `<style>
-    .slip { height: 45vh; border: 2px dashed #000; padding: 20px; box-sizing: border-box; page-break-after: always; position: relative; }
-    .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .player-box { border: 1px solid #000; padding: 10px; }
-    .rank-boxes { display: flex; gap: 10px; margin-top: 5px; }
-    .rank-box { border: 1px solid #000; width: 25px; height: 25px; text-align: center; line-height: 25px; font-size: 12px; }
-    .signature { margin-top: 15px; border-top: 1px solid #000; font-size: 10px; padding-top: 2px; }
-    .tie-check { position: absolute; top: 20px; right: 20px; border: 1px solid #000; padding: 5px; }
-  </style>`;
+function printRoundMatchSlips(roundNumber) {
 
-  r.pods.forEach((pod, idx) => {
-    html += `<div class="slip">
-      <div class="tie-check">3-Way Tie [ ]</div>
-      <h3>Round ${num} - Pod ${idx + 1}</h3>
-      <div class="slip-grid">`;
-    pod.players.forEach(pid => {
-      const p = findPlayer(pid);
-      html += `<div class="player-box">
-        <strong>${p.name}</strong>
-        <div class="rank-boxes">
-          <div class="rank-box">1</div><div class="rank-box">2</div>
-          <div class="rank-box">3</div><div class="rank-box">4</div>
-        </div>
-        <div class="signature">Signature</div>
-      </div>`;
-    });
-    html += `</div></div>`;
-  });
+  const round = tournament.rounds.find(r => r.number === roundNumber);
+  if (!round) {
+    alert("Round not found.");
+    return;
+  }
 
-  const win = window.open("", "_blank");
-  win.document.write(html);
-  win.document.close();
-  win.print();
+  const totalPods = round.pods.length;
+  const half = Math.ceil(totalPods / 2);
+
+  // Reorder pods for cut-stack printing
+  const orderedPods = [];
+  for (let i = 0; i < half; i++) {
+    if (round.pods[i]) orderedPods.push({ pod: round.pods[i], index: i });
+    if (round.pods[i + half]) orderedPods.push({ pod: round.pods[i + half], index: i + half });
+  }
+
+  let pagesHTML = "";
+
+  for (let i = 0; i < orderedPods.length; i += 2) {
+
+    const top = orderedPods[i];
+    const bottom = orderedPods[i + 1];
+
+    pagesHTML += `
+      <div class="print-page">
+        ${buildSlipHTML(top.pod, top.index, round)}
+        ${bottom ? buildSlipHTML(bottom.pod, bottom.index, round) : ""}
+      </div>
+    `;
+  }
+
+  const html = `
+    <html>
+    <head>
+      <title>Round ${round.number} Match Slips</title>
+      <style>
+
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+        }
+
+        .print-page {
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          page-break-after: always;
+        }
+
+.match-slip {
+  padding: 20px;
+  box-sizing: border-box;
+  height: 48%;
+  border-bottom: 2px dashed #999;
+  display: flex;
+  flex-direction: column;
+}
+
+        .player-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .player-box {
+          border: 2px solid #000;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          min-height: 150px;
+        }
+
+        .player-header {
+          margin-bottom: 12px;
+          font-size: 15px;
+        }
+
+        .ranking-line {
+          display: flex;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .ranking-line span {
+          border: 1px solid #000;
+          padding: 4px 10px;
+          min-width: 20px;
+          text-align: center;
+        }
+
+        .signature-line {
+          margin-top: auto;
+        }
+
+        .signature-line {
+  margin-top: auto;
+}
+
+/* ADD BELOW HERE */
+
+.slip-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.tournament-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.round-info {
+  font-size: 14px;
+  margin-top: 4px;
+}
+.player-grid {
+  margin-top: 10px;
+}
+
+      </style>
+    </head>
+    <body>
+      ${pagesHTML}
+    </body>
+    </html>
+  `;
 }
 
 function printFinalStandings() {
