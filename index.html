@@ -27,25 +27,32 @@
         <label for="roundCount">Number of Rounds:</label>
         <input type="number" id="roundCount" value="3" min="1" max="10">
 
-        <input type="file" id="saveFile">
-        <button onclick="importTournamentSave()">Load Tournament</button>
+        <div style="margin-top: 15px;">
+            <label>Load existing save:</label>
+            <input type="file" id="saveFile" accept=".json">
+            <button class="secondary-button" onclick="importTournamentSave()">Load Tournament</button>
+        </div>
 
-        <button onclick="createTournament()">Start Event</button>
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <button style="width: 100%; padding: 15px;" onclick="createTournament()">Start New Event</button>
     </div>
 
-<div id="registration" class="panel" style="display:none;">
+    <div id="registration" class="panel" style="display:none;">
         <h2>Player Registration</h2>
 
-        <input
-            type="text"
-            id="playerName"
-            placeholder="Enter player name"
-            onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayer(); }"
-        >
-        <div style="margin-bottom: 10px;">
-            <input type="file" id="rosterFile" accept=".json,.csv">
-            <button onclick="importMeleeRoster()">Import Melee Roster</button>
+        <div style="display: flex; gap: 8px;">
+            <input
+                type="text"
+                id="playerName"
+                style="flex-grow: 1;"
+                placeholder="Enter player name"
+                onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayer(); }"
+            >
             <button type="button" onclick="addPlayer()">Add Player</button>
+        </div>
+
+        <div style="margin: 10px 0;">
+            <button class="secondary-button" onclick="importMeleeRoster()">Import Melee Roster</button>
         </div>
 
         <ul id="playerList"></ul>
@@ -58,77 +65,32 @@
 
     <div id="tournament" class="panel" style="display:none;">
         
-        <div id="fastResultControls" class="fast-result-controls">
-            <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
-            <input
-                id="tournamentFastCode"
-                type="text"
-                placeholder="Round+Pod+P1P2P3P4"
-                onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFastCodes();}"
-            >
-            <button onclick="applyTournamentFastCodes()">Apply Fast Codes</button>
-        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <div id="fastResultControls">
+                <label for="tournamentFastCode"><strong>Fast Result Entry</strong> (e.g., <code>112341</code>)</label><br>
+                <input
+                    id="tournamentFastCode"
+                    type="text"
+                    placeholder="Round+Pod+Results"
+                    onkeypress="if(event.key === 'Enter'){event.preventDefault(); applyTournamentFastCodes();}"
+                >
+                <button onclick="applyTournamentFastCodes()">Apply</button>
+            </div>
 
-        <div style="margin-bottom: 20px;">
-            <button id="nextRoundButton" onclick="nextRound()" disabled>Generate Next Round</button>
-            <button id="printStandingsButton" onclick="printFinalStandings()" style="display:none;">Print Final Standings</button>
-            <select id="printMenu" onchange="handlePrintMenu()">
-                <option value="">Print...</option>
-                <option value="pairings">Round Pairings</option>
-                <option value="slips">Match Slips</option>
-                <option value="standings">Standings</option>
-                <option value="roster">Roster</option>
-            </select>
-            <button onclick="saveTournament()">Save Tournament</button>
+            <div style="display: flex; gap: 8px;">
+                <select id="printMenu" onchange="handlePrintMenu()">
+                    <option value="">Print...</option>
+                    <option value="pairings">Round Pairings</option>
+                    <option value="slips">Match Slips</option>
+                    <option value="standings">Standings</option>
+                    <option value="roster">Roster</option>
+                </select>
+                <button class="secondary-button" onclick="saveTournament()">Save</button>
+                <button id="nextRoundButton" style="display: none;" onclick="nextRound()">Generate Next Round</button>
+            </div>
         </div>
 
         <div class="main-tabs">
-            <button class="tab-button active-tab" onclick="openMainTab('roundTab')">Round</button>
-            <button class="tab-button" onclick="openMainTab('playersTab')">Player Management</button>
-            <button class="tab-button" onclick="openMainTab('standingsTab')">Standings</button>
-        </div>
-
-        <div id="roundTab" class="main-tab">
-            <h2 id="roundHeader"></h2>
-            <div id="roundTabs" class="round-tabs"></div>
-            <div id="roundControls" class="round-controls"></div>
-            <div id="pairings"></div>
-        </div>
-
-        <div id="playersTab" class="main-tab" style="display:none;">
-            <h2>Player Management</h2>
-            <table id="playerManagementTable">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-        <div id="standingsTab" class="main-tab" style="display:none;">
-            <h2>Standings</h2>
-            <table id="standingsTable">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Status</th>
-                        <th>Match Points</th>
-                        <th>OMW%</th>
-                        <th>GW%</th>
-                        <th>OGW%</th>
-                        <th id="gwpHeader">GW%</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+            <button class="tab-button active-tab" onclick="openMainTab('roundTab')">Current Round</button>
+            <button class="tab-button" onclick="openMainTab('playersTab')">Players</button>
+            <button class="tab-button" onclick="open
