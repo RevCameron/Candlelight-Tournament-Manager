@@ -34,12 +34,39 @@ function createTournament() {
   document.getElementById("setup").style.display = "none";
   document.getElementById("registration").style.display = "block";
   
-  // FIX: Check if gwpHeader exists before setting textContent
   const gwpHeader = document.getElementById("gwpHeader");
   if (gwpHeader) {
     gwpHeader.textContent = tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%";
   }
   
+  renderPlayerList();
+}
+
+// FIX: Added missing addPlayer function
+function addPlayer() {
+  const nameInput = document.getElementById("playerName");
+  const name = nameInput.value.trim();
+  if (!name) return;
+
+  const duplicate = tournament.players.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (duplicate) {
+    alert("Player already registered.");
+    return;
+  }
+
+  tournament.players.push({
+    id: tournament.nextPlayerId++,
+    name: name,
+    status: "active",
+    matchPoints: 0,
+    matchesPlayed: 0,
+    gameWins: 0,
+    gameLosses: 0,
+    gameDraws: 0,
+    opponents: []
+  });
+
+  nameInput.value = "";
   renderPlayerList();
 }
 
@@ -124,7 +151,6 @@ function confirmStartTournament() {
 function startRounds() {
   document.getElementById("registration").style.display = "none";
   document.getElementById("tournament").style.display = "block";
-  document.getElementById("printMenu").style.display = "inline-block";
   nextRound();
 }
 
@@ -158,11 +184,6 @@ function nextRound() {
   renderRoundView(tournament.viewingRound);
   updateStandings();
   renderPlayerManagement();
-  
-  setTimeout(() => {
-    printRoundPairings(tournament.currentRound);
-    printRoundMatchSlips(tournament.currentRound);
-  }, 300);
 }
 
 /* --- ROUND VIEW --- */
@@ -256,7 +277,7 @@ function finishTournament() {
   }
 }
 
-/* --- PLAYER MANAGEMENT & STANDINGS --- */
+/* --- STANDINGS --- */
 
 function setPlayerStatus(playerId, newStatus) {
   const player = findPlayer(playerId);
@@ -382,7 +403,6 @@ function importTournamentSave() {
         document.getElementById("setup").style.display = "none";
         document.getElementById("registration").style.display = "none";
         document.getElementById("tournament").style.display = "block";
-        document.getElementById("printMenu").style.display = "inline-block";
         renderRoundTabs();
         renderRoundView(tournament.viewingRound);
         updateStandings();
