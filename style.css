@@ -272,3 +272,22 @@ h2 {
   flex-direction: column;
   gap: 12px;
 }
+
+#printMenu {
+    background: var(--candle-yellow);
+    color: #111;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: center;
+}
+
+#printMenu:hover {
+    background: #eab308;
+}
