@@ -64,28 +64,36 @@ function addPlayer() {
 }
 
 function importMeleeRoster() {
-  const raw = prompt("Paste Melee Roster (Player names, one per line):");
-  if (!raw) return;
-  const lines = raw.split("\n");
-  lines.forEach(line => {
-    const name = line.trim();
-    if (!name) return;
-    if (!tournament.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      tournament.players.push({
-        id: tournament.nextPlayerId++,
-        name: name,
-        status: "active",
-        matchPoints: 0,
-        matchesPlayed: 0,
-        gameWins: 0,
-        gameLosses: 0,
-        gameDraws: 0,
-        opponents: []
-      });
+
+    if (tournament.currentRound > 0) {
+        alert("Cannot import roster after rounds have started.");
+        return;
     }
-  });
-  renderPlayerList();
+
+    const fileInput = document.getElementById("rosterFile");
+    if (!fileInput || !fileInput.files.length) {
+        alert("Please select a file.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const content = e.target.result;
+
+        if (file.name.toLowerCase().endsWith(".json")) {
+            importJSON(content);
+        } else if (file.name.toLowerCase().endsWith(".csv")) {
+            importCSV(content);
+        } else {
+            alert("Unsupported file type.");
+        }
+    };
+
+    reader.readAsText(file);
 }
+
 
 function renderPlayerList() {
   const container = document.getElementById("playerList");
