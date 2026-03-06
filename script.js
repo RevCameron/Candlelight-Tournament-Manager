@@ -1367,6 +1367,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printRoundPairings = printRoundPairings;
   window.printRoundMatchSlips = printRoundMatchSlips;
   window.printFinalStandings = printFinalStandings;
+  window.printRoster = printRoster;
   const fastCodeInput = document.getElementById("tournamentFastCode");
 renderPortalView();
 if (fastCodeInput) {
