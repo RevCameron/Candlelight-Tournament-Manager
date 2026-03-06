@@ -561,6 +561,8 @@ function applyPodRankingResult(roundNumber, podIndex, rankings) {
   recalculateStandings();
   renderRoundView(tournament.viewingRound);
   updateStandings();
+
+  checkRoundEndAutoSave();
 }
 
 function reportPodDraw(roundNumber, podIndex) {
@@ -573,6 +575,20 @@ function reportPodDraw(roundNumber, podIndex) {
   recalculateStandings();
   renderRoundView(tournament.viewingRound);
   updateStandings();
+
+  function reportPodDraw(roundNumber, podIndex) {
+  const pod = getPod(roundNumber, podIndex);
+  if (!pod || pod.locked) return;
+
+  pod.result = { type: "draw" };
+  pod.locked = true;
+
+  recalculateStandings();
+  renderRoundView(tournament.viewingRound);
+  updateStandings();
+
+  checkRoundEndAutoSave(); // <--- Add this line here
+}
 }
 
 function editPodResult(roundNumber, podIndex) {
@@ -889,13 +905,55 @@ function printRoundPairings(roundNumber) {
       });
     });
   });
+
+// Standalone Print Roster Function
 function printRoster() {
-  // Check if there are players to print
   if (!tournament || tournament.players.length === 0) {
     alert("No players are registered yet!");
     return;
   }
 
+  const sortedPlayers = [...tournament.players].sort((a, b) => a.name.localeCompare(b.name));
+
+  const html = `
+    <html><head><title>Tournament Roster</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      h2 { text-align: center; border-bottom: 2px solid #facc15; padding-bottom: 10px; }
+      table { border-collapse: collapse; width: 100%; max-width: 800px; margin: 20px auto; }
+      th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+      th { background-color: #1e40af; color: white; }
+      .status-active { color: #2f6f2f; font-weight: bold; }
+      .status-dropped { color: #a30000; }
+    </style>
+    </head><body>
+    <h2>${tournament.name || "Tournament"} - Player Roster</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player Name</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortedPlayers.map((player, index) => {
+          const statusClass = player.status === "active" ? "status-active" : "status-dropped";
+          return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${player.name}</td>
+              <td class="${statusClass}">${getStatusLabel(player.status)}</td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+    </body></html>
+  `;
+  openPrintWindow("Tournament Roster", html);
+}
+  
   // Sort players alphabetically by name
   const sortedPlayers = [...tournament.players].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1368,6 +1426,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printRoundMatchSlips = printRoundMatchSlips;
   window.printFinalStandings = printFinalStandings;
   window.printRoster = printRoster;
+  window.confirmStartTournament = confirmStartTournament;
   const fastCodeInput = document.getElementById("tournamentFastCode");
 renderPortalView();
 if (fastCodeInput) {
@@ -1406,4 +1465,44 @@ if(option==="standings") printFinalStandings();
 if(option==="roster") printRoster();
 
 document.getElementById("printMenu").value="";
+}
+
+function confirmStartTournament() {
+    if (tournament.players.length < 3) {
+        alert("At least 3 players are required to start.");
+        return;
+    }
+    if (confirm("Are you ready to start the tournament? This will lock the roster and generate Round 1.")) {
+        startRounds();
+    }
+}
+
+// Updated Save with Dynamic Naming
+function saveTournament() {
+    const data = JSON.stringify(tournament);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    // Format: [tournamentname]-[round].json
+    const safeName = (tournament.name || "tournament").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${safeName}-round-${tournament.currentRound}.json`;
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Auto-save prompt helper
+function checkRoundEndAutoSave() {
+    if (isRoundComplete(tournament.currentRound)) {
+        setTimeout(() => {
+            if (confirm(`Round ${tournament.currentRound} is complete! Would you like to save the tournament data?`)) {
+                saveTournament();
+            }
+        }, 500);
+    }
 }
