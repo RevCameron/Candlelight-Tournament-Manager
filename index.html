@@ -33,7 +33,7 @@
         <button onclick="createTournament()">Start Event</button>
     </div>
 
-    <div id="registration" class="panel" style="display:none;">
+<div id="registration" class="panel" style="display:none;">
         <h2>Player Registration</h2>
 
         <input
@@ -42,13 +42,18 @@
             placeholder="Enter player name"
             onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayer(); }"
         >
-        <input type="file" id="rosterFile" accept=".json,.csv">
-        <button onclick="importRoster()">Import Melee Roster</button>
-        <button type="button" onclick="addPlayer()">Add Player</button>
+        <div style="margin-bottom: 10px;">
+            <input type="file" id="rosterFile" accept=".json,.csv">
+            <button onclick="importRoster()">Import Melee Roster</button>
+            <button type="button" onclick="addPlayer()">Add Player</button>
+        </div>
 
         <ul id="playerList"></ul>
 
-        <button onclick="startRounds()">Start Tournament</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="secondary-button" onclick="printRoster()">Print Roster</button>
+            <button onclick="confirmStartTournament()">Start Tournament</button>
+        </div>
     </div>
 
     <div id="tournament" class="panel" style="display:none;">
