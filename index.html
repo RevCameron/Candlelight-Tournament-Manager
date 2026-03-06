@@ -34,23 +34,35 @@
     </div>
 
     <div id="registration" class="panel" style="display:none;">
-        <h2>Player Registration</h2>
-
-        <input
-            type="text"
-            id="playerName"
-            placeholder="Enter player name"
-            onkeydown="if(event.key === 'Enter') addPlayer()"
-        >
-        <input type="file" id="rosterFile" accept=".json,.csv">
-        <button onclick="addPlayer()">Add Player</button>
-        <button onclick="importMeleeRoster()">Import Melee Roster</button>
-        <div id="playerList"></div>
-        <div style="margin-top:20px;">
-            <button id="printRosterBtn" onclick="printRoster()">Print Roster</button>
-            <button id="startTournamentBtn" onclick="confirmStartTournament()" style="display:none; background-color: #28a745;">Start Tournament</button>
-        </div>
+    <h2>Player Registration</h2>
+    
+    <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px;">
+        <label>Import Roster (.csv/.json):</label><br>
+        <input type="file" id="rosterFile">
+        <button onclick="importRoster()">Import</button>
     </div>
+
+    <input type="text" id="playerName" placeholder="Enter player name">
+    <button onclick="addPlayer()">Add Player</button>
+
+    <ul id="playerList"></ul>
+
+    <div class="actions">
+        <button id="printRosterBtn" onclick="printRoster()">Print Roster</button>
+        <button id="startTournamentBtn" class="primary" onclick="confirmStartTournament()" style="display:none;">Start Tournament</button>
+    </div>
+</div>
+
+<div id="tournament" class="panel" style="display:none;">
+    <div class="main-tabs">
+        <button onclick="openMainTab('roundTab')">Current Round</button>
+        <button onclick="openMainTab('playersTab')">Players</button>
+        <button onclick="openMainTab('standingsTab')">Standings</button>
+        <input type="text" id="tournamentFastCode" placeholder="Fast Code: 112341">
+    </div>
+
+    <button id="nextRoundButton" class="primary" onclick="nextRound()" disabled>Next Round</button>
+</div>
 
     <div id="tournamentPortal" class="panel" style="display:none;">
         <div class="portal-header">
