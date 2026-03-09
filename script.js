@@ -318,6 +318,17 @@ function getPodSizes(playerCount) {
 function renderRoundTabs() {
   const tabs = document.getElementById("roundTabs");
   tabs.innerHTML = "";
+  // Conditional Column Logic
+  const podCount = round.pods.length;
+  pairingsSection.style.display = "grid";
+  pairingsSection.style.gap = "20px";
+  pairingsSection.style.alignItems = "start";
+
+  if (podCount === 2 || podCount === 4) {
+    pairingsSection.style.gridTemplateColumns = "1fr 1fr"; // 2 columns
+  } else {
+    pairingsSection.style.gridTemplateColumns = "1fr 1fr 1fr"; // 3 columns
+  }
 
   tournament.rounds.forEach(round => {
     const activeClass = round.number === tournament.viewingRound ? "active-tab" : "";
