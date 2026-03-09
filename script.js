@@ -683,7 +683,7 @@ function renderPlayerManagement() {
       const statusActions = player.status === "active"
         ? `
           <button onclick="setPlayerStatus(${player.id}, 'dropped')">Drop</button>
-          <button onclick="setPlayerStatus(${player.id}, 'eliminated')">Eliminate</button>
+          <button onclick="setPlayerStatus(${player.id}, 'disqualified')">Disqualify</button>
         `
         : `<button onclick="setPlayerStatus(${player.id}, 'active')">Re-activate</button>`;
 
@@ -759,7 +759,7 @@ function editPlayerName(playerId) {
 
 function getStatusLabel(status) {
   if (status === "dropped") return "Dropped";
-  if (status === "eliminated") return "Eliminated";
+  if (status === "disqualified") return "Disqualified";
   return "Active";
 }
 
