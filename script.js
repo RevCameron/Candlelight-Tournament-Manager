@@ -197,10 +197,16 @@ function nextRound() {
   renderRoundView(tournament.viewingRound);
   updateStandings();
   renderPlayerManagement();
-  setTimeout(()=>{
-printRoundPairings(tournament.currentRound);
-printRoundMatchSlips(tournament.currentRound);
-},300);
+  
+  setTimeout(() => {
+    printRoundPairings(tournament.currentRound);
+    printRoundMatchSlips(tournament.currentRound);
+    
+    // NEW: Save trigger at start of round
+    if (confirm(`Round ${tournament.currentRound} pairings generated. Would you like to save the tournament progress?`)) {
+      saveTournament("start");
+    }
+  }, 300);
 }
 
 function shuffleArray(items) {
@@ -211,91 +217,86 @@ function shuffleArray(items) {
   }
   return copy;
 }
-function countRepeatOpponents(pods) {
 
+function countRepeatOpponents(pods) {
   let repeats = 0;
 
   pods.forEach(pod => {
     for (let i = 0; i < pod.length; i++) {
-
       const player = findPlayer(pod[i]);
-
       for (let j = i + 1; j < pod.length; j++) {
         if (player.opponents.includes(pod[j])) {
           repeats += 1;
         }
       }
-
     }
   });
 
   return repeats;
 }
 
+// FIXED: Matching logic preserves points but shuffles inside brackets
 function buildPods() {
-let sortedPlayers = [...tournament.players]
-  .filter(player => player.status === "active");
+  let activePlayers = [...tournament.players].filter(player => player.status === "active");
 
-if (tournament.currentRound === 0) {
-  // Round 1: completely random
-  sortedPlayers = shuffleArray(sortedPlayers);
-} else {
-  // Later rounds: group by match points
-  const groups = {};
-
-  sortedPlayers.forEach(player => {
-    if (!groups[player.matchPoints]) {
-      groups[player.matchPoints] = [];
-    }
-    groups[player.matchPoints].push(player);
-  });
-
-  // Sort match point brackets high → low
-  const sortedPointValues = Object.keys(groups)
-    .map(Number)
-    .sort((a, b) => b - a);
-
-  // Randomize inside each bracket
-  sortedPlayers = [];
-  sortedPointValues.forEach(points => {
-    const shuffledGroup = shuffleArray(groups[points]);
-    sortedPlayers.push(...shuffledGroup);
-  });
-}
-  const podSizes = getPodSizes(sortedPlayers.length);
+  const podSizes = getPodSizes(activePlayers.length);
   if (!podSizes) {
     alert("Unable to make only 3-4 player pods with active player count.");
     return [];
   }
 
-const ATTEMPTS = 200;
+  const ATTEMPTS = 200;
+  let bestPods = null;
+  let bestScore = Infinity;
 
-let bestPods = null;
-let bestScore = Infinity;
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    let sortedPlayers = [];
 
-for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    if (tournament.currentRound === 0) {
+      // Round 1: completely random
+      sortedPlayers = shuffleArray(activePlayers);
+    } else {
+      // Later rounds: group by match points
+      const groups = {};
 
-  const shuffled = shuffleArray(sortedPlayers);
+      activePlayers.forEach(player => {
+        if (!groups[player.matchPoints]) {
+          groups[player.matchPoints] = [];
+        }
+        groups[player.matchPoints].push(player);
+      });
 
-  const pods = [];
-  let cursor = 0;
+      // Sort match point brackets high → low
+      const sortedPointValues = Object.keys(groups)
+        .map(Number)
+        .sort((a, b) => b - a);
 
-  podSizes.forEach(size => {
-    pods.push(shuffled.slice(cursor, cursor + size).map(player => player.id));
-    cursor += size;
-  });
+      // Randomize strictly inside each bracket
+      sortedPointValues.forEach(points => {
+        const shuffledGroup = shuffleArray(groups[points]);
+        sortedPlayers.push(...shuffledGroup);
+      });
+    }
 
-  const score = countRepeatOpponents(pods);
+    const pods = [];
+    let cursor = 0;
 
-  if (score < bestScore) {
-    bestScore = score;
-    bestPods = pods;
+    podSizes.forEach(size => {
+      pods.push(sortedPlayers.slice(cursor, cursor + size).map(player => player.id));
+      cursor += size;
+    });
+
+    const score = countRepeatOpponents(pods);
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestPods = pods;
+    }
+
+    if (score === 0) break;
   }
 
-  if (score === 0) break;
-}
-
-return bestPods;
+  return bestPods;
 }
 
 function getPodSizes(playerCount) {
@@ -452,17 +453,6 @@ function renderRoundControls(round) {
   `;
 }
 
-// NEW: Auto Save Check
-function checkRoundEndSave() {
-  if (isRoundComplete(tournament.currentRound)) {
-    setTimeout(() => {
-      if (confirm("Round complete! Would you like to save the tournament progress?")) {
-        saveTournament();
-      }
-    }, 500);
-  }
-}
-
 function reportPodRanking(roundNumber, podIndex) {
   const pod = getPod(roundNumber, podIndex);
   if (!pod || pod.locked) return;
@@ -611,7 +601,6 @@ function applyPodRankingResult(roundNumber, podIndex, rankings) {
   recalculateStandings();
   renderRoundView(tournament.viewingRound);
   updateStandings();
-  checkRoundEndSave(); // NEW CALL
 }
 
 function reportPodDraw(roundNumber, podIndex) {
@@ -624,7 +613,6 @@ function reportPodDraw(roundNumber, podIndex) {
   recalculateStandings();
   renderRoundView(tournament.viewingRound);
   updateStandings();
-  checkRoundEndSave(); // NEW CALL
 }
 
 function editPodResult(roundNumber, podIndex) {
@@ -763,7 +751,7 @@ function getStatusLabel(status) {
   return "Active";
 }
 
-// NEW: Button Logic replaces original function
+// FIXED: Handles save on final round and updates visibility
 function updateNextRoundButtonState() {
   const button = document.getElementById("nextRoundButton");
   if (!button) return;
@@ -778,7 +766,7 @@ function updateNextRoundButtonState() {
     if (isFinalRound) {
       button.textContent = "Save Tournament and Print Standings";
       button.onclick = function() {
-        saveTournament();
+        saveTournament("end");
         printFinalStandings();
       };
     } else {
@@ -1319,9 +1307,8 @@ function importRoster() {
     reader.readAsText(file);
 }
 
-// NEW: Custom save format naming
-function saveTournament() {
-
+// FIXED: Save format adds start/mid/end suffix without breaking string parsing
+function saveTournament(stateSuffix = "mid") {
   const data = JSON.stringify(tournament);
   const blob = new Blob([data], { type: "application/json" });
 
@@ -1330,8 +1317,11 @@ function saveTournament() {
   const a = document.createElement("a");
   a.href = url;
   
+  // This ensures mouse click events from HTML don't print "[object MouseEvent]"
+  const suffix = (typeof stateSuffix === "string") ? stateSuffix : "mid";
   const safeName = (tournament.name || "tournament").replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  a.download = `${safeName}-${tournament.currentRound}.json`;
+  
+  a.download = `${safeName}-round-${tournament.currentRound}-${suffix}.json`;
   a.click();
 
   URL.revokeObjectURL(url);
