@@ -196,7 +196,6 @@ function nextRound() {
   updateStandings();
   renderPlayerManagement();
   
-  // FIXED: Auto-save triggers immediately before the print dialogue sequence
   saveTournament("start");
   
   setTimeout(() => {
@@ -771,7 +770,6 @@ function updateNextRoundButtonState() {
     button.style.display = "none";
   }
 
-  // Always hide the old standalone button as it is now merged
   const printStandingsButton = document.getElementById("printStandingsButton");
   if (printStandingsButton) {
     printStandingsButton.style.display = "none";
@@ -874,30 +872,45 @@ function saveTournamentState(){
 localStorage.setItem("tournamentState", JSON.stringify(tournament));
 }
 
+// FIXED: Calculate individual Match-Win Percentage, bound by a 33% floor
+function calculateMwp(player) {
+  if (player.matchesPlayed === 0) return 0;
+  // Based on your 5-3-3-1 system, the maximum match points possible per round is 5.
+  const mwp = player.matchPoints / (player.matchesPlayed * 5);
+  return Math.max(mwp, MIN_OPPONENT_PERCENT);
+}
+
+// FIXED: Calculate individual Game-Win Percentage, bound by a 33% floor
 function calculateGwp(player) {
   const totalGames = player.gameWins + player.gameLosses + player.gameDraws;
   if (totalGames === 0) return 0;
-  return (player.gameWins + (0.5 * player.gameDraws)) / totalGames;
+  // Uses the standard 3 points for a win and 1 for a draw for game point calculations
+  const gamePoints = (player.gameWins * 3) + (player.gameDraws * 1);
+  const maxGamePoints = totalGames * 3;
+  const gwp = gamePoints / maxGamePoints;
+  return Math.max(gwp, MIN_OPPONENT_PERCENT);
 }
 
+// FIXED: Opponents' Match-Win Percentage correctly averages Opponents' MWPs
 function calculateOmw(player) {
   if (player.opponents.length === 0) return 0;
-  const opponentPercentages = player.opponents.map(opponentId => {
+  const opponentMwps = player.opponents.map(opponentId => {
     const opponent = findPlayer(opponentId);
     if (!opponent) return 0;
-    return Math.max(calculateGwp(opponent), MIN_OPPONENT_PERCENT);
+    return calculateMwp(opponent);
   });
-  return average(opponentPercentages);
+  return average(opponentMwps);
 }
 
+// FIXED: Opponents' Game-Win Percentage correctly averages Opponents' GWPs
 function calculateOgw(player) {
   if (player.opponents.length === 0) return 0;
-  const opponentOmw = player.opponents.map(opponentId => {
+  const opponentGwps = player.opponents.map(opponentId => {
     const opponent = findPlayer(opponentId);
     if (!opponent) return 0;
-    return Math.max(calculateOmw(opponent), MIN_OPPONENT_PERCENT);
+    return calculateGwp(opponent);
   });
-  return average(opponentOmw);
+  return average(opponentGwps);
 }
 
 function average(values) {
