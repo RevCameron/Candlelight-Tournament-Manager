@@ -117,7 +117,6 @@ function deleteRegisteredPlayer(playerId) {
   renderPlayerList(); saveTournamentState();
 }
 
-// NEW: Print Roster function
 function printRoster() {
   const sorted = [...tournament.players].sort((a,b) => a.name.localeCompare(b.name));
   const html = `
@@ -140,7 +139,6 @@ function printRoster() {
   if (startBtn) startBtn.style.display = "inline-block";
 }
 
-// NEW: Confirm Start Tournament wrapper
 function confirmStartTournament() {
   const activeCount = tournament.players.filter(player => player.status === "active").length;
   if (activeCount < 3) {
@@ -198,14 +196,12 @@ function nextRound() {
   updateStandings();
   renderPlayerManagement();
   
+  // FIXED: Auto-save triggers immediately before the print dialogue sequence
+  saveTournament("start");
+  
   setTimeout(() => {
     printRoundPairings(tournament.currentRound);
     printRoundMatchSlips(tournament.currentRound);
-    
-    // NEW: Save trigger at start of round
-    if (confirm(`Round ${tournament.currentRound} pairings generated. Would you like to save the tournament progress?`)) {
-      saveTournament("start");
-    }
   }, 300);
 }
 
@@ -235,7 +231,6 @@ function countRepeatOpponents(pods) {
   return repeats;
 }
 
-// FIXED: Matching logic preserves points but shuffles inside brackets
 function buildPods() {
   let activePlayers = [...tournament.players].filter(player => player.status === "active");
 
@@ -751,7 +746,6 @@ function getStatusLabel(status) {
   return "Active";
 }
 
-// FIXED: Handles save on final round and updates visibility
 function updateNextRoundButtonState() {
   const button = document.getElementById("nextRoundButton");
   if (!button) return;
@@ -1167,7 +1161,6 @@ function buildSlipHTML(pod, podIndex, round) {
   `;
 }
 
-// NEW: Headers reflect appropriate title based on final or standard
 function printFinalStandings() {
   recalculateStandings();
   const sorted = [...tournament.players].sort((a, b) => b.matchPoints - a.matchPoints);
@@ -1307,7 +1300,6 @@ function importRoster() {
     reader.readAsText(file);
 }
 
-// FIXED: Save format adds start/mid/end suffix without breaking string parsing
 function saveTournament(stateSuffix = "mid") {
   const data = JSON.stringify(tournament);
   const blob = new Blob([data], { type: "application/json" });
@@ -1317,7 +1309,6 @@ function saveTournament(stateSuffix = "mid") {
   const a = document.createElement("a");
   a.href = url;
   
-  // This ensures mouse click events from HTML don't print "[object MouseEvent]"
   const suffix = (typeof stateSuffix === "string") ? stateSuffix : "mid";
   const safeName = (tournament.name || "tournament").replace(/[^a-z0-9]/gi, '_').toLowerCase();
   
@@ -1390,7 +1381,6 @@ document.addEventListener("DOMContentLoaded", function () {
   window.printRoundMatchSlips = printRoundMatchSlips;
   window.printFinalStandings = printFinalStandings;
   
-  // FIXED: Ensure all missing functions are exposed to HTML buttons
   window.printRoster = printRoster;
   window.confirmStartTournament = confirmStartTournament;
   window.openMainTab = openMainTab;
