@@ -5,7 +5,8 @@ let tournament = {
   viewingRound: 0,
   players: [],
   rounds: [],
-  nextPlayerId: 1
+  nextPlayerId: 1,
+  startingTable: 1
 };
 
 const MIN_OPPONENT_PERCENT = 0.33;
@@ -25,13 +26,16 @@ tournament = {
   viewingRound: 0,
   players: [],
   rounds: [],
-  nextPlayerId: 1
+  nextPlayerId: 1,
+  startingTable: parseInt(document.getElementById("startingTable").value, 10) || 1
 };
 
   document.getElementById("setup").style.display = "none";
   document.getElementById("registration").style.display = "block";
   
-  // Safely check for header to prevent crash
+  document.getElementById("activeTournamentTitle").textContent = tournament.name;
+  document.getElementById("activeTournamentMode").textContent = tournament.gameMode;
+  
   const gwpHeader = document.getElementById("gwpHeader");
   if (gwpHeader) {
       gwpHeader.textContent = tournament.gameMode === "Twin Suns" ? "TGW%" : "GW%";
@@ -67,6 +71,41 @@ function addPlayer() {
 
   input.value = "";
   renderPlayerList();
+}
+
+function addPlayerMidTournament() {
+  const input = document.getElementById("midPlayerName");
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+
+  const duplicate = tournament.players.some(
+    player => player.name.toLowerCase() === name.toLowerCase()
+  );
+  if (duplicate) {
+    alert("Player already added to the tournament.");
+    return;
+  }
+
+  tournament.players.push({
+    id: tournament.nextPlayerId,
+    name,
+    status: "active",
+    matchPoints: 0,
+    matchesPlayed: 0,
+    gameWins: 0,
+    gameLosses: 0,
+    gameDraws: 0,
+    opponents: []
+  });
+
+  tournament.nextPlayerId += 1;
+  input.value = "";
+  
+  renderPlayerManagement();
+  updateStandings();
+  saveTournamentState();
+  alert(`${name} has been added to the tournament. They will be included in the next round's pairings.`);
 }
 
 function renderPlayerList() {
@@ -134,7 +173,6 @@ function printRoster() {
   `;
   openPrintWindow("Roster", html);
   
-  // Expose the Start Tournament button after printing
   const startBtn = document.getElementById("startTournamentBtn");
   if (startBtn) startBtn.style.display = "inline-block";
 }
@@ -247,10 +285,8 @@ function buildPods() {
     let sortedPlayers = [];
 
     if (tournament.currentRound === 0) {
-      // Round 1: completely random
       sortedPlayers = shuffleArray(activePlayers);
     } else {
-      // Later rounds: group by match points
       const groups = {};
 
       activePlayers.forEach(player => {
@@ -260,12 +296,10 @@ function buildPods() {
         groups[player.matchPoints].push(player);
       });
 
-      // Sort match point brackets high → low
       const sortedPointValues = Object.keys(groups)
         .map(Number)
         .sort((a, b) => b - a);
 
-      // Randomize strictly inside each bracket
       sortedPointValues.forEach(points => {
         const shuffledGroup = shuffleArray(groups[points]);
         sortedPlayers.push(...shuffledGroup);
@@ -294,9 +328,9 @@ function buildPods() {
 }
 
 function getPodSizes(playerCount) {
-
+  // Returns [3, 2] instead of [2, 3] to ensure higher ranked players get the larger pod
   if (playerCount === 5) {
-    return [2,3];
+    return [3, 2];
   }
 
   for (let threePods = 0; threePods <= Math.floor(playerCount / 3); threePods += 1) {
@@ -352,7 +386,7 @@ if(saved){
         return p ? p.name : "";
       });
 
-      return `<p><strong>Pod ${i+1}</strong>: ${names.join(", ")}</p>`;
+      return `<p><strong>Table ${i + (tournament.startingTable || 1)}</strong>: ${names.join(", ")}</p>`;
 
     }).join("")}
 
@@ -366,12 +400,25 @@ function openRound(roundNumber) {
   renderRoundView(roundNumber);
 }
 
+function updateStartingTable(val) {
+  const num = parseInt(val, 10);
+  if (num && num > 0) {
+    tournament.startingTable = num;
+    if (tournament.viewingRound > 0) {
+      renderRoundView(tournament.viewingRound);
+    }
+  }
+}
+
 function renderRoundView(roundNumber) {
   const round = tournament.rounds[roundNumber - 1];
   if (!round) return;
 
   document.getElementById("roundHeader").textContent = `Round ${round.number}`;
   renderRoundControls(round);
+  
+  const tableInput = document.getElementById("roundStartingTable");
+  if(tableInput) tableInput.value = tournament.startingTable || 1;
 
   const pairingsSection = document.getElementById("pairings");
   pairingsSection.innerHTML = "";
@@ -403,9 +450,11 @@ function renderRoundView(roundNumber) {
       `;
     }).join("");
 
+    const displayTable = podIndex + (tournament.startingTable || 1);
+
     pairingsSection.innerHTML += `
       <div class="pod-card" id="pod-${round.number}-${podIndex}">
-        <h3>Pod ${podIndex + 1} (${playerObjects.length} players)</h3>
+        <h3 style="margin-top:0;">Table ${displayTable} (Pod ${podIndex + 1}) - ${playerObjects.length} players</h3>
         <table class="pod-rank-table">
           <thead>
             <tr>
@@ -872,26 +921,21 @@ function saveTournamentState(){
 localStorage.setItem("tournamentState", JSON.stringify(tournament));
 }
 
-// FIXED: Calculate individual Match-Win Percentage, bound by a 33% floor
 function calculateMwp(player) {
   if (player.matchesPlayed === 0) return 0;
-  // Based on your 5-3-3-1 system, the maximum match points possible per round is 5.
   const mwp = player.matchPoints / (player.matchesPlayed * 5);
   return Math.max(mwp, MIN_OPPONENT_PERCENT);
 }
 
-// FIXED: Calculate individual Game-Win Percentage, bound by a 33% floor
 function calculateGwp(player) {
   const totalGames = player.gameWins + player.gameLosses + player.gameDraws;
   if (totalGames === 0) return 0;
-  // Uses the standard 3 points for a win and 1 for a draw for game point calculations
   const gamePoints = (player.gameWins * 3) + (player.gameDraws * 1);
   const maxGamePoints = totalGames * 3;
   const gwp = gamePoints / maxGamePoints;
   return Math.max(gwp, MIN_OPPONENT_PERCENT);
 }
 
-// FIXED: Opponents' Match-Win Percentage correctly averages Opponents' MWPs
 function calculateOmw(player) {
   if (player.opponents.length === 0) return 0;
   const opponentMwps = player.opponents.map(opponentId => {
@@ -902,7 +946,6 @@ function calculateOmw(player) {
   return average(opponentMwps);
 }
 
-// FIXED: Opponents' Game-Win Percentage correctly averages Opponents' GWPs
 function calculateOgw(player) {
   if (player.opponents.length === 0) return 0;
   const opponentGwps = player.opponents.map(opponentId => {
@@ -951,7 +994,7 @@ function printRoundPairings(roundNumber) {
       pairings.push({
         firstName: player.name.split(" ")[0].toLowerCase(),
         name: player.name,
-        pod: podIndex + 1,
+        pod: podIndex + (tournament.startingTable || 1), // Uses Table Number
         opponents
       });
     });
@@ -965,7 +1008,7 @@ function printRoundPairings(roundNumber) {
     </head><body>
     <h2>Round ${round.number} Pairings (First Name A-Z)</h2>
     <table>
-      <thead><tr><th>Player</th><th>Pod</th><th>Opponents</th></tr></thead>
+      <thead><tr><th>Player</th><th>Table</th><th>Opponents</th></tr></thead>
       <tbody>
         ${pairings.map(entry => `<tr><td>${entry.name}</td><td>${entry.pod}</td><td>${entry.opponents}</td></tr>`).join("")}
       </tbody>
@@ -1003,7 +1046,6 @@ function printRoundMatchSlips(roundNumber) {
   const totalPods = round.pods.length;
   const half = Math.ceil(totalPods / 2);
 
-  // Reorder pods for cut-stack printing
   const orderedPods = [];
   for (let i = 0; i < half; i++) {
     if (round.pods[i]) orderedPods.push({ pod: round.pods[i], index: i });
@@ -1130,13 +1172,14 @@ openPrintWindow("Round " + round.number + " Match Slips", html);
 function buildSlipHTML(pod, podIndex, round) {
 
   const players = pod.players;
+  const displayTable = podIndex + (tournament.startingTable || 1);
 
   return `
     <div class="match-slip">
 
       <div class="slip-header">
         <div class="tournament-name">${tournament.name}</div>
-        <div class="round-info">Round ${round.number} – Pod ${podIndex + 1}</div>
+        <div class="round-info">Round ${round.number} – Table ${displayTable} (Pod ${podIndex + 1})</div>
       </div>
 
       <div class="player-grid">
@@ -1338,6 +1381,13 @@ function loadTournament(fileContent) {
     const data = JSON.parse(fileContent);
 
     tournament = data;
+    
+    if (!tournament.startingTable) {
+        tournament.startingTable = 1;
+    }
+
+    document.getElementById("activeTournamentTitle").textContent = tournament.name || "Tournament";
+    document.getElementById("activeTournamentMode").textContent = tournament.gameMode || "";
 
     renderPlayerList();
 
@@ -1401,6 +1451,9 @@ document.addEventListener("DOMContentLoaded", function () {
   window.importRoster = importRoster;
   window.importTournamentSave = importTournamentSave;
   window.saveTournament = saveTournament;
+  
+  window.addPlayerMidTournament = addPlayerMidTournament;
+  window.updateStartingTable = updateStartingTable;
 
   const fastCodeInput = document.getElementById("tournamentFastCode");
 renderPortalView();
