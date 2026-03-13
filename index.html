@@ -27,6 +27,9 @@
         <label for="roundCount">Number of Rounds:</label>
         <input type="number" id="roundCount" value="3" min="1" max="10">
 
+        <label for="startingTable">Starting Table Number:</label>
+        <input type="number" id="startingTable" value="1" min="1">
+
         <input type="file" id="saveFile">
         <button onclick="importTournamentSave()">Load Tournament</button>
 
@@ -54,6 +57,11 @@
 
     <div id="tournament" class="panel" style="display:none;">
         
+        <div id="tournamentHeader" style="text-align: center; margin-bottom: 20px;">
+            <h2 id="activeTournamentTitle" style="margin:0;"></h2>
+            <h3 id="activeTournamentMode" style="margin:0; color:#555;"></h3>
+        </div>
+
         <div id="fastResultControls" class="fast-result-controls">
             <label for="tournamentFastCode"><strong>Tournament Fast Result Codes</strong> (example: <code>231324</code> or tie <code>230000</code>)</label>
             <input
@@ -88,11 +96,26 @@
             <h2 id="roundHeader"></h2>
             <div id="roundTabs" class="round-tabs"></div>
             <div id="roundControls" class="round-controls"></div>
+            
+            <div style="margin-bottom: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <label for="roundStartingTable"><strong>Starting Table Number:</strong></label>
+                <input type="number" id="roundStartingTable" min="1" onchange="updateStartingTable(this.value)" style="width: 60px;">
+                <span style="font-size: 12px; color: #666; margin-left: 10px;">Updates table numbers below and on printouts</span>
+            </div>
+
             <div id="pairings" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start;"></div>
         </div>
 
         <div id="playersTab" class="main-tab" style="display:none;">
             <h2>Player Management</h2>
+            
+            <div style="margin-bottom: 15px; border: 1px solid #ddd; padding: 10px; border-radius: 6px; background-color: #f9f9f9;">
+                <h3 style="margin-top: 0;">Add Player Mid-Tournament</h3>
+                <input type="text" id="midPlayerName" placeholder="Enter player name" onkeydown="if(event.key === 'Enter') { event.preventDefault(); addPlayerMidTournament(); }" style="margin-right: 10px;">
+                <button onclick="addPlayerMidTournament()">Add Player</button>
+                <p style="font-size: 12px; color: #666; margin-bottom: 0; margin-top: 5px;">Player will be added to the roster with 0 points and paired in the next generated round.</p>
+            </div>
+
             <table id="playerManagementTable">
                 <thead>
                     <tr>
@@ -105,7 +128,7 @@
             </table>
         </div>
 
-        <div id="standingsTab" class="main-tab" style="text-align: center; width: 100%;">
+        <div id="standingsTab" class="main-tab" style="text-align: center; width: 100%; display:none;">
             <h2>Standings</h2>
             <table id="standingsTable">
                 <thead>
