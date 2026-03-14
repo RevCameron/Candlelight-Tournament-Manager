@@ -454,7 +454,7 @@ function renderRoundView(roundNumber) {
 
     pairingsSection.innerHTML += `
       <div class="pod-card" id="pod-${round.number}-${podIndex}">
-        <h3 style="margin-top:0;">Table ${displayTable} (Pod ${podIndex + 1}) - ${playerObjects.length} players</h3>
+        <h3 style="margin-top:0;">Table ${displayTable} - ${playerObjects.length} players</h3>
         <table class="pod-rank-table">
           <thead>
             <tr>
