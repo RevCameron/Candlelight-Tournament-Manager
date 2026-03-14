@@ -1179,7 +1179,7 @@ function buildSlipHTML(pod, podIndex, round) {
 
       <div class="slip-header">
         <div class="tournament-name">${tournament.name}</div>
-        <div class="round-info">Round ${round.number} – Table ${displayTable} (Pod ${podIndex + 1})</div>
+        <div class="round-info">Round ${round.number} – Table ${displayTable}</div>
       </div>
 
       <div class="player-grid">
