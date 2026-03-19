@@ -242,10 +242,14 @@ function nextRound() {
   }, 300);
 }
 
+// UPGRADED TO CRYPTOGRAPHIC RANDOMNESS FOR ROUND 1
 function shuffleArray(items) {
   const copy = [...items];
+  const randomBuffer = new Uint32Array(1);
   for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    window.crypto.getRandomValues(randomBuffer);
+    const randomFraction = randomBuffer[0] / (0xffffffff + 1);
+    const j = Math.floor(randomFraction * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
@@ -328,7 +332,6 @@ function buildPods() {
 }
 
 function getPodSizes(playerCount) {
-  // Returns [3, 2] instead of [2, 3] to ensure higher ranked players get the larger pod
   if (playerCount === 5) {
     return [3, 2];
   }
@@ -430,7 +433,7 @@ function renderRoundView(roundNumber) {
       const rankingOptions = playerObjects
         .map((_, optionIndex) => {
           const rankValue = optionIndex + 1;
-          return `<option value="${rankValue}">${rankValue}</option>`;
+          return `<option value="${rankValue}"> ${rankValue}</option>`;
         })
         .join("");
 
@@ -1426,6 +1429,12 @@ function importTournamentSave() {
   reader.readAsText(fileInput.files[0]);
 }
 
+// NEW FUNCTION FOR PORTAL LINK
+function generatePortalLink() {
+  const portalUrl = window.location.href.split('?')[0] + "?portal=true";
+  prompt("To show the portal on a screen attached to THIS device, copy this link. (Note: This will not work on players' personal phones without migrating to a cloud database):", portalUrl);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   window.createTournament = createTournament;
   window.addPlayer = addPlayer;
@@ -1454,6 +1463,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
   window.addPlayerMidTournament = addPlayerMidTournament;
   window.updateStartingTable = updateStartingTable;
+  window.generatePortalLink = generatePortalLink; // ATTACHED PORTAL FUNCTION
 
   const fastCodeInput = document.getElementById("tournamentFastCode");
 renderPortalView();
