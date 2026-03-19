@@ -12,6 +12,37 @@
         <h1>Candlelight Tournament Manager</h1>
     </header>
 
+    </div>
+
+    <div id="setup" class="panel">
+        <h2>Create Event</h2>
+
+        <label for="gameMode">Game Mode:</label>
+        <select id="gameMode">
+            <option value="MTG Commander">MTG Commander</option>
+            <option value="Twin Suns">SWU Twin Suns</option>
+        </select>
+        
+        <label for="tournamentName">Tournament Name:</label>
+        <input type="text" id="tournamentName" placeholder="Enter tournament name">
+        
+        <label for="roundCount">Number of Rounds:</label>
+        <input type="number" id="roundCount" value="3" min="1" max="10">
+
+        <label for="startingTable">Starting Table Number:</label>
+        <input type="number" id="startingTable" value="1" min="1">
+
+        <input type="file" id="saveFile">
+        <button onclick="importTournamentSave()">Load Tournament</button>
+
+        <button onclick="createTournament()">Start Event</button>
+
+            <!-- AD PLACEMENT PLACEHOLDER -->
+    <div id="ad-banner" style="text-align: center; margin: 10px auto; max-width: 728px; height: 90px; background-color: #f0f0f0; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #888;">
+        Sponsor / Ad Space Placeholder (Insert Sponsor Image or Ad Script Here)
+    </div>
+
+    <div id="registration" class="panel" style="display:none;">
         <h2>Player Registration</h2>
 
         <input
